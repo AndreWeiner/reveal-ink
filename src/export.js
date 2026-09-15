@@ -1,4 +1,4 @@
-export const FORMAT_VERSION = 1;
+export const FORMAT_VERSION = 2;
 export function emptyDocument(presentation) {
   return { version: FORMAT_VERSION, presentation, slides: Object.create(null) };
 }
@@ -6,9 +6,9 @@ export function emptyDocument(presentation) {
 // Validate before replacing any live data. Reconstruct objects to reject unexpected fields.
 export function parseDocument(value, presentation) {
   const data = typeof value === 'string' ? JSON.parse(value) : value;
-  if (!data || data.version !== FORMAT_VERSION || typeof data.presentation !== 'string' ||
+  if (!data || ![1, FORMAT_VERSION].includes(data.version) || typeof data.presentation !== 'string' ||
       !data.slides || typeof data.slides !== 'object' || Array.isArray(data.slides)) {
-    throw new Error('Unsupported annotation format (expected version 1)');
+    throw new Error('Unsupported annotation format (expected version 1 or 2)');
   }
   const result = emptyDocument(presentation ?? data.presentation);
   let count = 0;
@@ -23,7 +23,7 @@ export function parseDocument(value, presentation) {
           typeof s.options.simulatePressure !== 'boolean') throw new Error('Invalid stroke');
       ids.add(s.id);
       const points = s.points.map(p => {
-        if (++count > 1000000 || !Array.isArray(p) || p.length !== 3 || !p.every(n => Number.isFinite(n) && n >= 0 && n <= 1)) {
+        if (++count > 1000000 || !Array.isArray(p) || p.length !== 3 || !p.every((n, i) => Number.isFinite(n) && (i === 2 || data.version === 1 ? n >= 0 && n <= 1 : n >= -100 && n <= 100))) {
           throw new Error('Invalid or excessively large annotation data');
         }
         return [...p];

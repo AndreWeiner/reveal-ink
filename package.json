@@ -1,21 +1,28 @@
 {
   "name": "reveal-ink",
-  "version": "0.1.0",
+  "version": "0.3.3",
   "private": true,
   "description": "Pressure-sensitive vector handwriting for Reveal.js",
   "type": "module",
   "license": "MIT",
   "main": "dist/ink.js",
   "module": "dist/ink.mjs",
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "start": "vite --port 8001 --open /demo/",
     "build": "vite build",
     "test": "node --test --test-isolation=none test/*.test.js",
     "test:browser": "node test/browser.mjs",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "build:demo": "npm run build && node scripts/build-demo.mjs"
   },
-  "engines": { "node": ">=22.12.0" },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "devDependencies": {
     "perfect-freehand": "1.2.3",
     "puppeteer": "25.8.0",

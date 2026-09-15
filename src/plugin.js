@@ -8,9 +8,25 @@ import { createToolbar } from './toolbar.js';
 
 export default function RevealInk() {
   let reveal, root, config, data, storage, toolbar, renderer, input, slide, key;
+  let canvas = false, baseKey;
   let tool = 'pen', draft = null, before = null, last = null, disposed = false;
   let writable = false, queue = Promise.resolve(), revision = 0;
   const history = new History(), listeners = [];
+  const canvasOffsets = new Map();
+  const offset = () => canvas ? canvasOffsets.get(baseKey) || 0 : 0;
+  const scrollMaximum = () => Math.min(90, strokes().reduce((max, s) => s.points.reduce((m, p) => Math.max(m, p[1]+1), max), Math.max(3, offset()+2)));
+  function layout() {
+    if (!slide) return;
+    const {width, height} = size();
+    renderer.layout(slide, width, height, root, reveal.getScale(), offset());
+    toolbar.scroll(offset(), scrollMaximum());
+  }
+  function scrollTo(position) {
+    if (!canvas || blocked()) return;
+    input?.finish();
+    canvasOffsets.set(baseKey, Math.max(0, Math.min(90, position)));
+    layout();
+  }
   const settings = () => config[tool === 'highlighter' ? 'highlighter' : 'pen'];
   const size = () => reveal.getComputedSlideSize();
   const aspect = () => size().width / size().height;
@@ -19,10 +35,12 @@ export default function RevealInk() {
   const blocked = () => reveal.isOverview() || reveal.isPaused() || reveal.isScrollView?.();
   function update() {
     toolbar.update(tool, history.entry(key), settings());
+    toolbar.canvas(canvas);
+    toolbar.scroll(offset(), scrollMaximum());
     root.classList.toggle('ink-active', tool !== 'navigate' && !blocked());
     toolbar.hide(!!blocked());
   }
-  function paint() { if (slide) renderer.render(slide, strokes(), aspect()); }
+  function paint() { if (slide) { renderer.surface(slide).classList.toggle('ink-extra-canvas', canvas); renderer.render(slide, strokes(), aspect()); } }
   function save() {
     if (!writable || !config.storage.autosave) return queue;
     const snapshot = structuredClone(data), current = ++revision;
@@ -47,11 +65,20 @@ export default function RevealInk() {
   }
   function refresh() {
     input?.finish();
-    slide = reveal.getCurrentSlide();
+    const nextSlide = reveal.getCurrentSlide();
+    if (slide !== nextSlide) { if (slide) renderer.surface(slide).classList.remove('ink-extra-canvas'); canvas = false; }
+    slide = nextSlide;
     if (!slide) return;
-    key = slideKey(slide, reveal.getIndices(slide));
-    const { width, height } = size();
-    renderer.layout(slide, width, height); paint(); update();
+    baseKey = slideKey(slide, reveal.getIndices(slide));
+    key = canvas ? `canvas:${baseKey}` : baseKey;
+    layout(); paint(); update();
+  }
+  function toggleCanvas() {
+    input?.finish();
+    if (!slide) return;
+    canvas = !canvas;
+    key = canvas ? `canvas:${baseKey}` : baseKey;
+    layout(); paint(); update();
   }
   function setTool(value) {
     if (!['pen', 'highlighter', 'eraser', 'navigate'].includes(value)) throw new Error('Unknown ink tool');
@@ -79,16 +106,17 @@ export default function RevealInk() {
       if (opts.enabled === false) return;
       config = {
         presentation: opts.presentation || `${location.origin}${location.pathname}`,
-        pen: { width: 3.5, color: '#ffffff', thinning: 0.2, smoothing: 0.7, streamline: 0.65, pressure: true, ...opts.pen },
-        highlighter: { width: 14, color: '#feffb3', thinning: 0, smoothing: 0.7, streamline: 0.65, pressure: false, ...opts.highlighter },
+        pen: { width: 3.5, color: '#ffffff', thinning: 0.2, smoothing: 0.35, streamline: 0.15, pressure: true, ...opts.pen },
+        highlighter: { width: 14, color: '#feffb3', thinning: 0, smoothing: 0.35, streamline: 0.15, pressure: false, ...opts.highlighter },
         eraser: { radius: 12, ...opts.eraser },
         storage: { type: 'indexeddb', autosave: true, ...opts.storage }
       };
       root = reveal.getRevealElement(); renderer = new Renderer();
       data = emptyDocument(config.presentation);
       toolbar = createToolbar(root, {
-        tool: setTool, undo: () => edit('undo'), redo: () => edit('redo'),
-        color(value) { input?.finish(); settings().color = value; },
+        tool: setTool, canvas: toggleCanvas, scrollTo, scrollBy: amount => scrollTo(offset()+amount),
+        filter(name, value) { input?.finish(); settings()[name] = value; }, undo: () => edit('undo'), redo: () => edit('redo'),
+        color(value) { input?.finish(); if (tool === 'eraser') tool = 'pen'; settings().color = value; update(); },
         width(value) { input?.finish(); settings().width = value; },
         clear() { input?.finish(); if (!slide || !strokes().length) return; const old = strokes(); data.slides[key] = []; commit(old); },
         export() { input?.finish(); download(data); },
@@ -105,7 +133,7 @@ export default function RevealInk() {
         const stored = await storage.load(config.presentation);
         if (stored) data = parseDocument(stored, config.presentation);
         writable = true;
-        toolbar.status(config.storage.autosave ? 'Saved on this device' : 'Autosave off — export to keep');
+        toolbar.status(config.storage.autosave ? '' : 'Autosave off — export to keep', !config.storage.autosave);
       } catch (error) {
         // Never overwrite data that could not be read or migrated.
         toolbar.status('Storage unavailable — use Export', true); console.error('Reveal Ink:', error);
@@ -114,7 +142,10 @@ export default function RevealInk() {
       input = bindInput(root, {
         enabled: () => !!slide && tool !== 'navigate' && !blocked(),
         surface: () => slide && renderer.surface(slide),
+        canvas: () => canvas && !blocked(),
+        scroll: pixels => scrollTo(offset() + pixels / (size().height * reveal.getScale())),
         start(point, pointerType) {
+          toolbar.collapse();
           before = strokes(); last = point;
           if (tool === 'eraser') { erase(point); paint(); return; }
           const p = settings();
@@ -145,7 +176,7 @@ export default function RevealInk() {
       api.cleanup = () => { window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', visibility); };
       if (reveal.isReady()) refresh();
     },
-    setTool,
+    setTool, toggleCanvas, scrollCanvas: scrollTo,
     undo: () => edit('undo'), redo: () => edit('redo'),
     clear() { input?.finish(); if (slide && strokes().length) { const old = strokes(); data.slides[key] = []; commit(old); } },
     exportJSON() { input?.finish(); return serialize(data); },

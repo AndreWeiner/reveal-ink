@@ -5,14 +5,14 @@
   <title>Reveal Ink — handwriting demo</title>
   <link rel="stylesheet" href="../node_modules/reveal.js/dist/reveal.css">
   <link rel="stylesheet" href="../node_modules/reveal.js/dist/theme/black.css">
-  <link rel="stylesheet" href="../dist/ink.css?v=palette-2">
+  <link rel="stylesheet" href="../dist/ink.css?v=0.3.3">
   <style>.reveal h2 {color:#8dd3c7} .reveal .hint {font-size:.55em;color:#bbb} .reveal .writing-space {height:200px;border-bottom:1px solid #555}</style>
 </head>
 <body>
 <div class="reveal"><div class="slides">
   <section id="ink-text">
     <h2>Write directly on your slides</h2>
-    <p>Pencil draws. Fingers navigate.</p>
+    <p>Pencil draws. Navigate mode enables swipes.</p>
     <p class="hint">Choose Pen, Highlight or Erase. Mouse drawing also works.<br>Use Navigate to select text or follow <a id="demo-link" href="#/ink-equation">this link</a>.</p>
     <div class="writing-space"></div>
   </section>
@@ -28,11 +28,13 @@
       <p class="hint">Highlight part of the workflow. Press ↓ for the next vertical slide.</p>
     </section>
     <section id="ink-vertical-2"><h2>Sketch an idea</h2><div class="writing-space"></div><p class="hint">Each slide has its own undo / redo history.</p></section>
-    <section id="ink-vertical-3"><h2>Take your notes with you</h2><p>More → Export JSON</p><p class="hint">Import replaces this presentation’s complete annotation set.<br>Export first if you want to keep both versions.</p><div class="writing-space"></div></section>
+    <section id="ink-vertical-3"><h2>Take your notes with you</h2><p>Use the canvas icon for more space; More → Export JSON</p><p class="hint">Import replaces this presentation’s complete annotation set.<br>Export first if you want to keep both versions.</p><div class="writing-space"></div></section>
   </section>
 </div></div>
 <script src="../node_modules/reveal.js/dist/reveal.js"></script>
-<script src="../dist/ink.js?v=white-default-3"></script>
-<script>Reveal.initialize({ hash: true, ink: { presentation: 'reveal-ink-demo', pen: { color: '#ffffff' } }, plugins: [RevealInk] });</script>
+<script type="module">
+import RevealInk from "../dist/ink.mjs?v=0.3.3";
+window.RevealInk = RevealInk;
+Reveal.initialize({ hash: true, ink: { presentation: 'reveal-ink-demo', pen: { color: '#ffffff' } }, plugins: [RevealInk] });</script>
 </body>
 </html>

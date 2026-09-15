@@ -24,7 +24,17 @@ async function pen(type='pen', cancel=false) {
 }
 try {
   await page.goto(url);await ready();
-  await pen();let d=await data();assert.equal(d.slides['id:ink-text'].length,1);
+  await pen();
+  assert.ok(await page.$eval('.reveal-ink-toolbar', e => e.hidden));
+  assert.ok(await page.$eval('.reveal-ink-toggle', e => !e.hidden));
+  assert.ok(await page.$eval('.reveal-ink-palette', e => !e.hidden));
+  await page.click('[data-color="#81b1d2"]');
+  assert.equal(await page.$eval('.reveal-ink-swatch[aria-pressed=true]', e => e.dataset.color), '#81b1d2');
+  assert.ok(await page.$eval('.reveal-ink-toolbar', e => e.hidden));
+  await page.click('.reveal-ink-toggle');
+  assert.ok(await page.$eval('.reveal-ink-toolbar', e => !e.hidden));
+  assert.equal(await page.$eval('.reveal-ink-status', e => e.textContent), '');
+  let d=await data();assert.equal(d.slides['id:ink-text'].length,1);
   assert.ok(d.slides['id:ink-text'][0].points.some(p=>Math.abs(p[2]-.8)<1e-6));
   assert.ok(d.slides['id:ink-text'][0].points.length>=4);
   await pen('touch');assert.equal((await data()).slides['id:ink-text'].length,1);
@@ -62,18 +72,93 @@ try {
   assert.ok(await page.$eval('.reveal-ink-toolbar',e=>e.hidden));
   await page.evaluate(()=>Reveal.toggleOverview(false));await new Promise(r=>setTimeout(r,500));
   await page.evaluate(()=>Reveal.getPlugin('ink').setTool('navigate'));
+  assert.ok(await page.$eval('.reveal-ink-palette', e => e.hidden));
   await page.click('#demo-link');assert.equal(await page.evaluate(()=>Reveal.getCurrentSlide().id),'ink-equation');
   await page.evaluate(()=>Reveal.getPlugin('ink').setTool('pen'));
+  assert.ok(await page.$eval('.reveal-ink-palette', e => !e.hidden));
   await new Promise(r=>setTimeout(r,500));
   // Real mouse events, including native pointer capture.
   const r=await page.$eval('.present .reveal-ink-surface',e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}});
   await page.mouse.move(r.x+r.w*.2,r.y+r.h*.6);await page.mouse.down();
   await page.mouse.move(r.x+r.w*.5,r.y+r.h*.7,{steps:20});await page.mouse.up();
   assert.equal((await data()).slides['id:ink-equation'].length,1);
+  // Full-viewport writing: both side margins accept pen input.
+  await page.evaluate(() => {
+    const root=Reveal.getRevealElement(), r=root.getBoundingClientRect();
+    for (const x of [r.left+3,r.right-3]) {
+      for (const type of ['pointerdown','pointerup']) root.dispatchEvent(new PointerEvent(type,{
+        bubbles:true,cancelable:true,pointerType:'pen',pointerId:45,button:0,buttons:1,
+        clientX:x,clientY:r.top+70,pressure:.5}));
+    }
+  });
+  const edgeStrokes=(await data()).slides['id:ink-equation'];
+  assert.equal(edgeStrokes.length,3);
+  assert.ok(edgeStrokes[1].points[0][0]<0);
+  assert.ok(edgeStrokes[2].points[0][0]>1);
+  assert.ok(await page.$eval('.present svg path', e=>e.getAttribute('d').includes('Q')));
+  const slideBefore=await page.evaluate(()=>Reveal.getCurrentSlide().id);
+  await page.evaluate(()=>document.querySelector('.navigate-right').click());
+  assert.equal(await page.evaluate(()=>Reveal.getCurrentSlide().id),slideBefore);
+  await page.evaluate(()=>Reveal.getPlugin('ink').toggleCanvas());
+  assert.ok(await page.$('.ink-extra-canvas'));
+  await pen();
+  assert.equal((await data()).slides['canvas:id:ink-equation'].length,1);
+  await page.evaluate(()=>Reveal.getPlugin('ink').undo());
+  assert.equal((await data()).slides['canvas:id:ink-equation'].length,0);
+  assert.equal((await data()).slides['id:ink-equation'].length,3);
+  await page.evaluate(()=>Reveal.getPlugin('ink').redo());
+  await page.screenshot({path:'/tmp/reveal-ink-canvas.png'});
+  await page.evaluate(()=>Reveal.getPlugin('ink').flush());
+  await page.reload();await ready();
+  await page.evaluate(()=>Reveal.getPlugin('ink').toggleCanvas());
+  assert.equal((await data()).slides['canvas:id:ink-equation'].length,1);
+  await page.evaluate(()=>Reveal.getPlugin('ink').toggleCanvas());
+  assert.equal((await data()).slides['id:ink-equation'].length,3);
   await page.screenshot({path:'/tmp/reveal-ink-demo.png'});
   await page.evaluate(()=>Reveal.getPlugin('ink').destroy());
   assert.equal(await page.$('.reveal-ink-toolbar'),null);assert.equal(await page.$('.reveal-ink-surface'),null);
   assert.deepEqual(errors,[]);
+  const context = await browser.createBrowserContext();
+  const scrollPage = await context.newPage();
+  await scrollPage.goto(url); await scrollPage.waitForFunction(()=>window.Reveal?.isReady());
+  await scrollPage.click('.reveal-ink-canvas-toggle');
+  assert.ok(await scrollPage.$('.ink-extra-canvas'));
+  await scrollPage.click('.reveal-ink-toolbar summary');
+  await scrollPage.$eval('[aria-label="Smoothing"]', e=>{e.value='0.2';e.dispatchEvent(new Event('input',{bubbles:true}));});
+  await scrollPage.$eval('[aria-label="Stabilizer"]', e=>{e.value='0.05';e.dispatchEvent(new Event('input',{bubbles:true}));});
+  await scrollPage.click('.reveal-ink-toolbar summary');
+  await scrollPage.evaluate(()=>Reveal.getRevealElement().dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaY:1400})));
+  const scrollPosition=await scrollPage.$eval('[aria-label="Canvas vertical position"]',e=>Number(e.value));
+  assert.ok(scrollPosition>1);
+  const draw = async()=>scrollPage.evaluate(()=>{
+    const root=Reveal.getRevealElement(), r=root.getBoundingClientRect();
+    for(const [type,x] of [['pointerdown',.3],['pointermove',.5],['pointerup',.6]]) root.dispatchEvent(new PointerEvent(type,{
+      bubbles:true,cancelable:true,pointerType:'pen',pointerId:72,button:0,buttons:1,pressure:.5,
+      clientX:r.left+r.width*x,clientY:r.top+r.height*.5}));
+  });
+  await draw();
+  let notes=await scrollPage.evaluate(()=>JSON.parse(Reveal.getPlugin('ink').exportJSON()));
+  const ink=notes.slides['canvas:id:ink-text'][0];
+  assert.ok(ink.points[0][1]>1);assert.equal(ink.options.smoothing,.2);assert.equal(ink.options.streamline,.05);
+  await scrollPage.evaluate(()=>Reveal.getPlugin('ink').undo());
+  assert.equal(await scrollPage.evaluate(()=>JSON.parse(Reveal.getPlugin('ink').exportJSON()).slides['canvas:id:ink-text'].length),0);
+  await scrollPage.evaluate(()=>Reveal.getPlugin('ink').redo());
+  await scrollPage.evaluate(()=>Reveal.getPlugin('ink').setTool('eraser'));
+  await draw();
+  assert.equal(await scrollPage.evaluate(()=>JSON.parse(Reveal.getPlugin('ink').exportJSON()).slides['canvas:id:ink-text'].length),0);
+  await scrollPage.evaluate(()=>Reveal.getPlugin('ink').undo());
+  await scrollPage.evaluate(()=>Reveal.getPlugin('ink').flush());
+  await scrollPage.reload();await scrollPage.waitForFunction(()=>window.Reveal?.isReady());
+  await scrollPage.click('.reveal-ink-canvas-toggle');
+  await scrollPage.evaluate(position=>Reveal.getPlugin('ink').scrollCanvas(position),scrollPosition);
+  notes=await scrollPage.evaluate(()=>JSON.parse(Reveal.getPlugin('ink').exportJSON()));
+  assert.deepEqual(notes.slides['canvas:id:ink-text'][0],ink);
+  // Scrolling changes the viewport, not the stored coordinates.
+  await scrollPage.evaluate(()=>Reveal.getPlugin('ink').scrollCanvas(0));
+  assert.equal(await scrollPage.$eval('[aria-label="Canvas vertical position"]',e=>Number(e.value)),0);
+  await scrollPage.evaluate(position=>Reveal.getPlugin('ink').scrollCanvas(position),scrollPosition);
+  await scrollPage.screenshot({path:'/tmp/ink-scroll-canvas.png'});
+  await context.close();
   // A blocked storage backend must leave drawing/export available and show a warning.
   const offline = await browser.newPage();
   await offline.evaluateOnNewDocument(() => {
@@ -83,7 +168,7 @@ try {
   await offline.waitForFunction(() => window.Reveal?.isReady());
   assert.match(await offline.$eval('.reveal-ink-status', e => e.textContent), /Storage unavailable/);
   assert.ok(await offline.$('.reveal-ink-surface'));
-  assert.equal(await offline.evaluate(() => JSON.parse(Reveal.getPlugin('ink').exportJSON()).version), 1);
+  assert.equal(await offline.evaluate(() => JSON.parse(Reveal.getPlugin('ink').exportJSON()).version), 2);
   await offline.close();
   console.log('PASS: pressure/coalesced input, touch exclusion, pointer cancellation, IndexedDB restore, history, eraser, import/export, nested slides, portrait/landscape, overview, links, mouse, cleanup');
 } finally {await browser.close();await server.close();}

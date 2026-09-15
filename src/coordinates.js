@@ -1,9 +1,9 @@
 export const clamp = (n, min = 0, max = 1) => Math.max(min, Math.min(max, n));
 
-export function normalizePoint(event, rect) {
+export function normalizePoint(event, rect, margins = false) {
   if (!(rect.width > 0 && rect.height > 0)) throw new Error('Ink surface has no size');
-  return [clamp((event.clientX - rect.left) / rect.width),
-    clamp((event.clientY - rect.top) / rect.height),
+  return [clamp((event.clientX - rect.left) / rect.width, margins ? -100 : 0, margins ? 100 : 1),
+    clamp((event.clientY - rect.top) / rect.height, margins ? -100 : 0, margins ? 100 : 1),
     clamp(event.pressure > 0 ? event.pressure : 0.5)];
 }
 

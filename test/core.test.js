@@ -32,7 +32,7 @@ test('versioned serialization round trips without sharing mutable input', () => 
 });
 test('reject corrupt schemas, nonfinite/out-of-range points, bad styles, duplicate strokes', () => {
   const data=emptyDocument('deck');data.slides.a=[stroke];
-  for(const mutate of [d=>d.version=2,d=>d.slides.a[0].points[0][0]=NaN,d=>d.slides.a[0].points[0][1]=2,
+  for(const mutate of [d=>d.version=99,d=>d.slides.a[0].points[0][0]=NaN,d=>d.slides.a[0].points[0][1]=101,
     d=>d.slides.a[0].color='url(https://example.com)',d=>d.slides.a.push(d.slides.a[0]),d=>d.slides.a[0].width=-1]) {
     const copy=structuredClone(data);mutate(copy);assert.throws(()=>parseDocument(copy));
   }
@@ -41,4 +41,11 @@ test('eraser catches sweeps across a stroke between samples, but not distant str
   assert.equal(distanceToSegment([5,2],[0,0],[10,0]),2);
   assert.ok(hitStroke(stroke,[.5,0],[.5,.5],1.5,5));
   assert.ok(!hitStroke(stroke,[.5,.8],[.5,.9],1.5,5));
+});
+
+test('version 1 migrates; margins are supported by version 2', () => {
+  const old = {version:1,presentation:'deck',slides:{a:[stroke]}};
+  assert.equal(parseDocument(old).version,2);
+  const modern=parseDocument(old);modern.slides.a[0].points[0][0]=-.2;
+  assert.equal(parseDocument(serialize(modern)).slides.a[0].points[0][0],-.2);
 });

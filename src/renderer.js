@@ -8,10 +8,13 @@ function outline(stroke, complete = true) {
     size: stroke.width, ...stroke.options, last: complete
   });
 }
-function pathData(points) {
+export function pathData(points) {
   if (!points.length) return '';
-  const [first, ...rest] = points;
-  return `M ${first.join(' ')} L ${rest.map(p => p.join(' ')).join(' ')} Z`;
+  // Join outline samples with midpoint quadratic curves instead of polygon corners.
+  const midpoint = (a, b) => [(a[0]+b[0])/2, (a[1]+b[1])/2];
+  const start = midpoint(points.at(-1), points[0]);
+  return `M ${start.join(' ')} ` + points.map((p, i) =>
+    `Q ${p.join(' ')} ${midpoint(p, points[(i+1)%points.length]).join(' ')}`).join(' ') + ' Z';
 }
 export function hitStroke(stroke, from, to, aspect, radius) {
   const points = outline(stroke).map(([x, y]) => [x, y * stroke.aspect / aspect]);
@@ -39,11 +42,16 @@ export class Renderer {
     }
     return this.surfaces.get(slide);
   }
-  layout(slide, width, height) {
+  layout(slide, width, height, root, scale, scroll = 0) {
     const svg = this.surface(slide);
-    svg.style.width = `${width}px`; svg.style.height = `${height}px`;
-    svg.style.top = `${-slide.offsetTop}px`;
-    svg.setAttribute('viewBox', `0 0 ${MODEL_WIDTH} ${MODEL_WIDTH * height / width}`);
+    const bounds = root.getBoundingClientRect();
+    const fullWidth = bounds.width / scale, fullHeight = bounds.height / scale;
+    const padX = (fullWidth-width)/2, padY = (fullHeight-height)/2;
+    svg.style.width = `${fullWidth}px`; svg.style.height = `${fullHeight}px`;
+    svg.style.left = `${-padX}px`; svg.style.top = `${-slide.offsetTop-padY}px`;
+    svg.setAttribute('viewBox', `${-padX*MODEL_WIDTH/width} ${(-padY + scroll*height)*MODEL_WIDTH/width} ${fullWidth*MODEL_WIDTH/width} ${fullHeight*MODEL_WIDTH/width}`);
+    svg.inkRect = { left: bounds.left + padX*scale, top: bounds.top + padY*scale - scroll*height*scale,
+      width: width*scale, height: height*scale };
     return svg;
   }
   path(stroke, complete = true) {

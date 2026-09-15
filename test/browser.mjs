@@ -1,0 +1,89 @@
+import assert from 'node:assert/strict';
+import { createServer } from 'vite';
+import puppeteer from 'puppeteer';
+const server=await createServer({server:{host:'127.0.0.1',port:8019},logLevel:'error'});
+await server.listen();
+const browser=await puppeteer.launch({headless:true,args:['--no-sandbox']});
+const page=await browser.newPage(), errors=[];
+page.on('pageerror',e=>errors.push(e.message));
+const url='http://127.0.0.1:8019/demo/index.html';
+const data=()=>page.evaluate(()=>JSON.parse(Reveal.getPlugin('ink').exportJSON()));
+const ready=()=>page.waitForFunction(()=>window.Reveal?.isReady() && document.querySelector('.reveal-ink-surface'));
+async function pen(type='pen', cancel=false) {
+  await page.evaluate((type,cancel)=>{
+    const svg=document.querySelector('.present .reveal-ink-surface'), r=svg.getBoundingClientRect();
+    const target=Reveal.getCurrentSlide();
+    const event=(name,x,y,p)=>new PointerEvent(name,{bubbles:true,cancelable:true,pointerType:type,pointerId:32,button:0,buttons:1,
+      clientX:r.left+r.width*x,clientY:r.top+r.height*y,pressure:p});
+    target.dispatchEvent(event('pointerdown',.2,.65,.2));
+    const move=event('pointermove',.6,.65,.8);
+    Object.defineProperty(move,'getCoalescedEvents',{value:()=>[event('pointermove',.3,.6,.4),event('pointermove',.45,.7,.6),move]});
+    target.dispatchEvent(move);
+    target.dispatchEvent(event(cancel?'pointercancel':'pointerup',.6,.65,0));
+  },type,cancel);
+}
+try {
+  await page.goto(url);await ready();
+  await pen();let d=await data();assert.equal(d.slides['id:ink-text'].length,1);
+  assert.ok(d.slides['id:ink-text'][0].points.some(p=>Math.abs(p[2]-.8)<1e-6));
+  assert.ok(d.slides['id:ink-text'][0].points.length>=4);
+  await pen('touch');assert.equal((await data()).slides['id:ink-text'].length,1);
+  await page.evaluate(()=>Reveal.getPlugin('ink').flush());await page.reload();await ready();
+  assert.equal((await data()).slides['id:ink-text'].length,1);
+  // IndexedDB schema and presentation separation.
+  assert.equal(await page.evaluate(()=>new Promise(resolve=>{const r=indexedDB.open('reveal-ink');r.onsuccess=()=>{const db=r.result;const tx=db.transaction('presentations');const q=tx.objectStore('presentations').get('not-this-deck');q.onsuccess=()=>{resolve(q.result===undefined);db.close()}}})),true);
+  await page.evaluate(()=>Reveal.getPlugin('ink').undo()); // History is intentionally session-local after reload.
+  assert.equal((await data()).slides['id:ink-text'].length,1);
+  await pen('pen',true);assert.equal((await data()).slides['id:ink-text'].length,2);
+  await page.evaluate(()=>Reveal.getPlugin('ink').undo());assert.equal((await data()).slides['id:ink-text'].length,1);
+  await page.evaluate(()=>Reveal.getPlugin('ink').redo());assert.equal((await data()).slides['id:ink-text'].length,2);
+  const exported=await page.evaluate(()=>Reveal.getPlugin('ink').exportJSON());
+  await page.evaluate(()=>Reveal.getPlugin('ink').clear());assert.equal((await data()).slides['id:ink-text'].length,0);
+  await page.evaluate(()=>Reveal.getPlugin('ink').undo());assert.equal((await data()).slides['id:ink-text'].length,2);
+  await page.evaluate(()=>Reveal.getPlugin('ink').setTool('eraser'));await pen();
+  assert.equal((await data()).slides['id:ink-text'].length,0);
+  await page.evaluate(()=>Reveal.getPlugin('ink').undo());assert.equal((await data()).slides['id:ink-text'].length,2);
+  await page.evaluate(s=>Reveal.getPlugin('ink').importJSON(s),exported);
+  assert.equal((await data()).slides['id:ink-text'].length,2);
+  assert.equal(await page.evaluate(async()=>{try{await Reveal.getPlugin('ink').importJSON('{"version":99}');return false}catch{return true}}),true);
+  assert.equal((await data()).slides['id:ink-text'].length,2);
+  await page.evaluate(()=>{Reveal.getPlugin('ink').setTool('highlighter');Reveal.slide(2,1)});
+  await new Promise(r=>setTimeout(r,500));await pen();
+  assert.equal((await data()).slides['id:ink-vertical-2'][0].tool,'highlighter');
+  await page.evaluate(()=>Reveal.getPlugin('ink').undo());assert.equal((await data()).slides['id:ink-text'].length,2);
+  await page.evaluate(()=>Reveal.slide(0));await new Promise(r=>setTimeout(r,500));
+  for(const [width,height] of [[768,1024],[1024,768]]) {
+    await page.setViewport({width,height});await new Promise(r=>setTimeout(r,300));
+    const dimensions=await page.evaluate(()=>{const r=Reveal.getCurrentSlide().querySelector('svg').getBoundingClientRect();return [r.width,r.height]});
+    assert.ok(dimensions.every(n=>n>0));
+    assert.deepEqual((await data()).slides['id:ink-text'],JSON.parse(exported).slides['id:ink-text']);
+  }
+  await page.evaluate(()=>Reveal.toggleOverview(true));
+  assert.ok(await page.$eval('.reveal-ink-toolbar',e=>e.hidden));
+  await page.evaluate(()=>Reveal.toggleOverview(false));await new Promise(r=>setTimeout(r,500));
+  await page.evaluate(()=>Reveal.getPlugin('ink').setTool('navigate'));
+  await page.click('#demo-link');assert.equal(await page.evaluate(()=>Reveal.getCurrentSlide().id),'ink-equation');
+  await page.evaluate(()=>Reveal.getPlugin('ink').setTool('pen'));
+  await new Promise(r=>setTimeout(r,500));
+  // Real mouse events, including native pointer capture.
+  const r=await page.$eval('.present .reveal-ink-surface',e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}});
+  await page.mouse.move(r.x+r.w*.2,r.y+r.h*.6);await page.mouse.down();
+  await page.mouse.move(r.x+r.w*.5,r.y+r.h*.7,{steps:20});await page.mouse.up();
+  assert.equal((await data()).slides['id:ink-equation'].length,1);
+  await page.screenshot({path:'/tmp/reveal-ink-demo.png'});
+  await page.evaluate(()=>Reveal.getPlugin('ink').destroy());
+  assert.equal(await page.$('.reveal-ink-toolbar'),null);assert.equal(await page.$('.reveal-ink-surface'),null);
+  assert.deepEqual(errors,[]);
+  // A blocked storage backend must leave drawing/export available and show a warning.
+  const offline = await browser.newPage();
+  await offline.evaluateOnNewDocument(() => {
+    Object.defineProperty(window, 'indexedDB', { value: { open() { throw new Error('Storage disabled for test'); } } });
+  });
+  await offline.goto(url);
+  await offline.waitForFunction(() => window.Reveal?.isReady());
+  assert.match(await offline.$eval('.reveal-ink-status', e => e.textContent), /Storage unavailable/);
+  assert.ok(await offline.$('.reveal-ink-surface'));
+  assert.equal(await offline.evaluate(() => JSON.parse(Reveal.getPlugin('ink').exportJSON()).version), 1);
+  await offline.close();
+  console.log('PASS: pressure/coalesced input, touch exclusion, pointer cancellation, IndexedDB restore, history, eraser, import/export, nested slides, portrait/landscape, overview, links, mouse, cleanup');
+} finally {await browser.close();await server.close();}

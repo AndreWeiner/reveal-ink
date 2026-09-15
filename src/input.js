@@ -3,6 +3,37 @@ export function bindInput(root, handlers) {
   const abort = new AbortController();
   let active = null, frame = 0, suppressClickUntil = 0;
   const listen = (type, fn, options = {}) => root.addEventListener(type, fn, { capture: true, signal: abort.signal, ...options });
+  // A transient pen cursor, separate from annotation data and SVG export.
+  const cursor = document.createElement('span');
+  cursor.className = 'reveal-ink-pen-cursor'; cursor.hidden = true;
+  cursor.setAttribute('aria-hidden', 'true'); root.append(cursor);
+  let cursorPointer = null;
+  const hideCursor = () => { cursor.hidden = true; cursorPointer = null; };
+  function trackCursor(event) {
+    // Palm events must not displace the stylus marker.
+    if (event.pointerType === 'touch') return;
+    if (event.pointerType !== 'pen' || !handlers.enabled()) { hideCursor(); return; }
+    const bounds = root.getBoundingClientRect();
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    if (!bounds.width || !bounds.height || event.clientX < bounds.left || event.clientX > bounds.right ||
+        event.clientY < bounds.top || event.clientY > bounds.bottom || !target || !root.contains(target) ||
+        target.closest('button, input, select, textarea, .reveal-ink-toolbar, .reveal-ink-palette, .reveal-ink-scroll, .controls')) {
+      hideCursor(); return;
+    }
+    const scaleX = root.offsetWidth / bounds.width, scaleY = root.offsetHeight / bounds.height;
+    cursor.style.left = `${(event.clientX - bounds.left) * scaleX - root.clientLeft}px`;
+    cursor.style.top = `${(event.clientY - bounds.top) * scaleY - root.clientTop}px`;
+    cursor.style.width = `${6 * scaleX}px`; cursor.style.height = `${6 * scaleY}px`;
+    cursorPointer = event.pointerId; cursor.hidden = false;
+  }
+  listen('pointerdown', trackCursor);
+  listen('pointermove', trackCursor);
+  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture', 'pointerleave']) {
+    listen(type, event => {
+      if (event.pointerId === cursorPointer && (type !== 'pointerleave' || event.target === root)) hideCursor();
+    });
+  }
+  window.addEventListener('blur', hideCursor, { signal: abort.signal });
   const consume = event => { if (event.cancelable) event.preventDefault(); event.stopImmediatePropagation(); };
   function samples(event) {
     let events = event.getCoalescedEvents?.() || [];
@@ -73,5 +104,5 @@ export function bindInput(root, handlers) {
     if (handlers.enabled() && event.target.closest('.controls')) { consume(event); return; }
     if (performance.now() < suppressClickUntil && !event.target.closest('.reveal-ink-toolbar, .reveal-ink-toggle, .reveal-ink-palette, .reveal-ink-scroll, .reveal-ink-canvas-return')) consume(event);
   });
-  return { finish: () => finish(), destroy() { finish(); abort.abort(); cancelAnimationFrame(frame); } };
+  return { finish() { hideCursor(); finish(); }, destroy() { hideCursor(); finish(); abort.abort(); cancelAnimationFrame(frame); cursor.remove(); } };
 }

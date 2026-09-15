@@ -170,5 +170,36 @@ try {
   assert.ok(await offline.$('.reveal-ink-surface'));
   assert.equal(await offline.evaluate(() => JSON.parse(Reveal.getPlugin('ink').exportJSON()).version), 2);
   await offline.close();
+  const pointerPage = await browser.newPage();
+  await pointerPage.goto(url); await pointerPage.waitForFunction(() => window.Reveal?.isReady());
+  const pointer = (type, pointerType = 'pen', x = 400, y = 300) => pointerPage.evaluate(({type,pointerType,x,y}) => {
+    document.elementFromPoint(x,y).dispatchEvent(new PointerEvent(type, {
+      bubbles:true, pointerType, pointerId:pointerType === 'touch' ? 88 : 77,
+      clientX:x,clientY:y,button:0,buttons:type === 'pointerdown' ? 1 : 0,pressure:.5
+    }));
+  },{type,pointerType,x,y});
+  const dot = () => pointerPage.$eval('.reveal-ink-pen-cursor', e => {
+    const r=e.getBoundingClientRect(); return {hidden:e.hidden,x:r.x+r.width/2,y:r.y+r.height/2,width:r.width};
+  });
+  const initial = await pointerPage.evaluate(() => Reveal.getPlugin('ink').exportJSON());
+  await pointer('pointermove');
+  let marker = await dot(); assert.equal(marker.hidden,false); assert.ok(Math.abs(marker.x-400)<1 && Math.abs(marker.y-300)<1); assert.equal(marker.width,6);
+  await pointer('pointermove','touch',410,310); assert.deepEqual(await dot(),marker);
+  assert.equal(await pointerPage.evaluate(() => Reveal.getPlugin('ink').exportJSON()), initial);
+  await pointer('pointerdown'); await pointer('pointermove','pen',430,320);
+  assert.equal((await dot()).hidden,false);
+  await pointer('pointerup','pen',430,320); assert.equal((await dot()).hidden,true);
+  await pointer('pointermove'); await pointer('pointercancel'); assert.equal((await dot()).hidden,true);
+  await pointer('pointermove'); await pointer('pointermove','mouse'); assert.equal((await dot()).hidden,true);
+  assert.equal(await pointerPage.$eval('.slides',e=>getComputedStyle(e).cursor),'crosshair');
+  await pointer('pointermove');
+  await pointerPage.evaluate(()=>Reveal.getPlugin('ink').setTool('navigate')); assert.equal((await dot()).hidden,true);
+  await pointer('pointermove'); assert.equal((await dot()).hidden,true);
+  await pointerPage.evaluate(()=>{Reveal.getPlugin('ink').setTool('pen');Reveal.getPlugin('ink').toggleCanvas();Reveal.getPlugin('ink').scrollCanvas(2);});
+  await pointer('pointermove'); assert.equal((await dot()).y,300);
+  await pointerPage.evaluate(()=>Reveal.toggleOverview(true)); assert.equal((await dot()).hidden,true);
+  await pointerPage.evaluate(()=>Reveal.getPlugin('ink').destroy()); assert.equal(await pointerPage.$('.reveal-ink-pen-cursor'),null);
+  await pointerPage.close();
+  console.log('PASS: pen position dot, hover/contact, palm exclusion, mouse crosshair, navigation, canvas scrolling, overview and cleanup');
   console.log('PASS: pressure/coalesced input, touch exclusion, pointer cancellation, IndexedDB restore, history, eraser, import/export, nested slides, portrait/landscape, overview, links, mouse, cleanup');
 } finally {await browser.close();await server.close();}

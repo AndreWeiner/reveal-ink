@@ -101,7 +101,7 @@ function P(e, n, r, i) {
 	for (let n = s; n < 1; n += s) a.push(C(o, e, t * 3 * n));
 	return a;
 }
-function F(e, t, n) {
+function ee(e, t, n) {
 	return [
 		c(e, f(t, n)),
 		c(e, f(t, n * .99)),
@@ -109,53 +109,53 @@ function F(e, t, n) {
 		u(e, f(t, n))
 	];
 }
-function I(e, t, n) {
+function F(e, t, n) {
 	return e === !1 || e === void 0 ? 0 : e === !0 ? Math.max(t, n) : e;
 }
-function ee(e, t, n) {
+function te(e, t, n) {
 	return e.slice(0, 10).reduce((e, r) => {
 		let i = r.pressure;
 		return t && (i = o(e, r.distance, n)), (e + i) / 2;
 	}, e[0].pressure);
 }
-function L(e, n = {}) {
-	let { size: r = 16, smoothing: a = .5, thinning: f = .5, simulatePressure: m = !0, easing: v = (e) => e, start: y = {}, end: x = {}, last: S = !1 } = n, { cap: C = !0, easing: T = (e) => e * (2 - e) } = y, { cap: D = !0, easing: L = (e) => --e * e * e + 1 } = x;
+function ne(e, n = {}) {
+	let { size: r = 16, smoothing: a = .5, thinning: f = .5, simulatePressure: m = !0, easing: v = (e) => e, start: y = {}, end: x = {}, last: S = !1 } = n, { cap: C = !0, easing: T = (e) => e * (2 - e) } = y, { cap: D = !0, easing: ne = (e) => --e * e * e + 1 } = x;
 	if (e.length === 0 || r <= 0) return [];
-	let R = e[e.length - 1].runningLength, z = I(y.taper, r, R), B = I(x.taper, r, R), V = (r * a) ** 2, H = [], U = [], W = ee(e, m, r), G = i(r, f, e[e.length - 1].pressure, v), K, q = e[0].vector, J = e[0].point, Y = J, X = J, Z = Y, te = !1;
+	let I = e[e.length - 1].runningLength, L = F(y.taper, r, I), R = F(x.taper, r, I), z = (r * a) ** 2, B = [], V = [], H = te(e, m, r), U = i(r, f, e[e.length - 1].pressure, v), W, G = e[0].vector, K = e[0].point, q = K, J = K, Y = q, X = !1;
 	for (let n = 0; n < e.length; n++) {
 		let { pressure: a } = e[n], { point: s, vector: h, distance: y, runningLength: x } = e[n], S = n === e.length - 1;
-		if (!S && R - x < 3) continue;
-		f ? (m && (a = o(W, y, r)), G = i(r, f, a, v)) : G = r / 2, K === void 0 && (K = G);
-		let C = x < z ? T(x / z) : 1, D = R - x < B ? L((R - x) / B) : 1;
-		G = Math.max(.01, G * Math.min(C, D));
-		let j = (S ? e[n] : e[n + 1]).vector, M = S ? 1 : _(h, j), N = _(h, q) < 0 && !te, P = M !== null && M < 0;
+		if (!S && I - x < 3) continue;
+		f ? (m && (a = o(H, y, r)), U = i(r, f, a, v)) : U = r / 2, W === void 0 && (W = U);
+		let C = x < L ? T(x / L) : 1, D = I - x < R ? ne((I - x) / R) : 1;
+		U = Math.max(.01, U * Math.min(C, D));
+		let j = (S ? e[n] : e[n + 1]).vector, M = S ? 1 : _(h, j), N = _(h, G) < 0 && !X, P = M !== null && M < 0;
 		if (N || P) {
-			g(O, q), p(O, O, G);
-			for (let e = 0; e <= 1; e += .07692307692307693) d(k, s, O), w(k, k, s, t * e), X = [k[0], k[1]], H.push(X), l(A, s, O), w(A, A, s, t * -e), Z = [A[0], A[1]], U.push(Z);
-			J = X, Y = Z, P && (te = !0);
+			g(O, G), p(O, O, U);
+			for (let e = 0; e <= 1; e += .07692307692307693) d(k, s, O), w(k, k, s, t * e), J = [k[0], k[1]], B.push(J), l(A, s, O), w(A, A, s, t * -e), Y = [A[0], A[1]], V.push(Y);
+			K = J, q = Y, P && (X = !0);
 			continue;
 		}
-		if (te = !1, S) {
-			g(O, h), p(O, O, G), H.push(u(s, O)), U.push(c(s, O));
+		if (X = !1, S) {
+			g(O, h), p(O, O, U), B.push(u(s, O)), V.push(c(s, O));
 			continue;
 		}
-		E(O, j, h, M), g(O, O), p(O, O, G), d(k, s, O), X = [k[0], k[1]], (n <= 1 || b(J, X) > V) && (H.push(X), J = X), l(A, s, O), Z = [A[0], A[1]], (n <= 1 || b(Y, Z) > V) && (U.push(Z), Y = Z), W = a, q = h;
+		E(O, j, h, M), g(O, O), p(O, O, U), d(k, s, O), J = [k[0], k[1]], (n <= 1 || b(K, J) > z) && (B.push(J), K = J), l(A, s, O), Y = [A[0], A[1]], (n <= 1 || b(q, Y) > z) && (V.push(Y), q = Y), H = a, G = h;
 	}
-	let ne = [e[0].point[0], e[0].point[1]], re = e.length > 1 ? [e[e.length - 1].point[0], e[e.length - 1].point[1]] : c(e[0].point, [1, 1]), Q = [], $ = [];
+	let re = [e[0].point[0], e[0].point[1]], Z = e.length > 1 ? [e[e.length - 1].point[0], e[e.length - 1].point[1]] : c(e[0].point, [1, 1]), Q = [], $ = [];
 	if (e.length === 1) {
-		if (!(z || B) || S) return j(ne, K || G);
+		if (!(L || R) || S) return j(re, W || U);
 	} else {
-		z || B && e.length === 1 || (C ? Q.push(...M(ne, U[0], 13)) : Q.push(...N(ne, H[0], U[0])));
+		L || R && e.length === 1 || (C ? Q.push(...M(re, V[0], 13)) : Q.push(...N(re, B[0], V[0])));
 		let t = h(s(e[e.length - 1].vector));
-		B || z && e.length === 1 ? $.push(re) : D ? $.push(...P(re, t, G, 29)) : $.push(...F(re, t, G));
+		R || L && e.length === 1 ? $.push(Z) : D ? $.push(...P(Z, t, U, 29)) : $.push(...ee(Z, t, U));
 	}
-	return H.concat($, U.reverse(), Q);
+	return B.concat($, V.reverse(), Q);
 }
-var R = [0, 0];
-function z(e) {
+var I = [0, 0];
+function L(e) {
 	return e != null && e >= 0;
 }
-function B(e, t = {}) {
+function R(e, t = {}) {
 	let { streamline: i = .5, size: a = 16, last: o = !1 } = t;
 	if (e.length === 0) return [];
 	let s = .15 + (1 - i) * .85, l = Array.isArray(e[0]) ? e : e.map(({ x: e, y: t, pressure: r = n }) => [
@@ -171,7 +171,7 @@ function B(e, t = {}) {
 	l.length === 1 && (l = [...l, [...c(l[0], r), ...l[0].slice(2)]]);
 	let u = [{
 		point: [l[0][0], l[0][1]],
-		pressure: z(l[0][2]) ? l[0][2] : .25,
+		pressure: L(l[0][2]) ? l[0][2] : .25,
 		vector: [...r],
 		distance: 0,
 		runningLength: 0
@@ -184,74 +184,74 @@ function B(e, t = {}) {
 			if (p < a) continue;
 			f = !0;
 		}
-		d(R, m.point, t), m = {
+		d(I, m.point, t), m = {
 			point: t,
-			pressure: z(l[e][2]) ? l[e][2] : n,
-			vector: x(R),
+			pressure: L(l[e][2]) ? l[e][2] : n,
+			vector: x(I),
 			distance: r,
 			runningLength: p
 		}, u.push(m);
 	}
 	return u[0].vector = u[1]?.vector || [0, 0], u;
 }
-function V(e, t = {}) {
-	return L(B(e, t), t);
+function z(e, t = {}) {
+	return ne(R(e, t), t);
 }
 //#endregion
 //#region src/coordinates.js
-var H = (e, t = 0, n = 1) => Math.max(t, Math.min(n, e));
-function U(e, t, n = !1) {
+var B = (e, t = 0, n = 1) => Math.max(t, Math.min(n, e));
+function V(e, t, n = !1) {
 	if (!(t.width > 0 && t.height > 0)) throw Error("Ink surface has no size");
 	return [
-		H((e.clientX - t.left) / t.width, n ? -100 : 0, n ? 100 : 1),
-		H((e.clientY - t.top) / t.height, n ? -100 : 0, n ? 100 : 1),
-		H(e.pressure > 0 ? e.pressure : .5)
+		B((e.clientX - t.left) / t.width, n ? -100 : 0, n ? 100 : 1),
+		B((e.clientY - t.top) / t.height, n ? -100 : 0, n ? 100 : 1),
+		B(e.pressure > 0 ? e.pressure : .5)
 	];
 }
-function W([e, t, n], r, i) {
+function H([e, t, n], r, i) {
 	return [
 		e * r,
 		t * i,
 		n
 	];
 }
-function G(e, t) {
+function U(e, t) {
 	return e.id ? `id:${e.id}` : `index:${t.h}:${t.v || 0}`;
 }
-function K(e, t, n) {
-	let r = n[0] - t[0], i = n[1] - t[1], a = r || i ? H(((e[0] - t[0]) * r + (e[1] - t[1]) * i) / (r * r + i * i)) : 0;
+function W(e, t, n) {
+	let r = n[0] - t[0], i = n[1] - t[1], a = r || i ? B(((e[0] - t[0]) * r + (e[1] - t[1]) * i) / (r * r + i * i)) : 0;
 	return Math.hypot(e[0] - t[0] - a * r, e[1] - t[1] - a * i);
 }
 //#endregion
 //#region src/renderer.js
-var q = "http://www.w3.org/2000/svg";
-function J(e, t = !0) {
-	return V(e.points.map((t) => W(t, 960, 960 / e.aspect)), {
+var G = "http://www.w3.org/2000/svg";
+function K(e, t = !0) {
+	return z(e.points.map((t) => H(t, 960, 960 / e.aspect)), {
 		size: e.width,
 		...e.options,
 		last: t
 	});
 }
-function Y(e) {
+function q(e) {
 	if (!e.length) return "";
 	let t = (e, t) => [(e[0] + t[0]) / 2, (e[1] + t[1]) / 2];
 	return `M ${t(e.at(-1), e[0]).join(" ")} ` + e.map((n, r) => `Q ${n.join(" ")} ${t(n, e[(r + 1) % e.length]).join(" ")}`).join(" ") + " Z";
 }
-function X(e, t, n, r, i) {
-	let a = J(e).map(([t, n]) => [t, n * e.aspect / r]), o = W(t, 960, 960 / r), s = W(n, 960, 960 / r), c = (e, t, n) => (t[0] - e[0]) * (n[1] - e[1]) - (t[1] - e[1]) * (n[0] - e[0]), l = !1;
+function J(e, t, n, r, i) {
+	let a = K(e).map(([t, n]) => [t, n * e.aspect / r]), o = H(t, 960, 960 / r), s = H(n, 960, 960 / r), c = (e, t, n) => (t[0] - e[0]) * (n[1] - e[1]) - (t[1] - e[1]) * (n[0] - e[0]), l = !1;
 	for (let e = 0, t = a.length - 1; e < a.length; t = e++) {
 		let n = a[e], r = a[t];
-		if (n[1] > o[1] != r[1] > o[1] && o[0] < (r[0] - n[0]) * (o[1] - n[1]) / (r[1] - n[1]) + n[0] && (l = !l), Math.min(K(n, o, s), K(r, o, s), K(o, n, r), K(s, n, r)) <= i || c(o, s, n) * c(o, s, r) < 0 && c(n, r, o) * c(n, r, s) < 0) return !0;
+		if (n[1] > o[1] != r[1] > o[1] && o[0] < (r[0] - n[0]) * (o[1] - n[1]) / (r[1] - n[1]) + n[0] && (l = !l), Math.min(W(n, o, s), W(r, o, s), W(o, n, r), W(s, n, r)) <= i || c(o, s, n) * c(o, s, r) < 0 && c(n, r, o) * c(n, r, s) < 0) return !0;
 	}
 	return l;
 }
-var Z = class {
+var Y = class {
 	constructor() {
 		this.surfaces = /* @__PURE__ */ new Map();
 	}
 	surface(e) {
 		if (!this.surfaces.has(e)) {
-			let t = document.createElementNS(q, "svg");
+			let t = document.createElementNS(G, "svg");
 			t.classList.add("reveal-ink-surface"), t.setAttribute("aria-hidden", "true"), t.setAttribute("preserveAspectRatio", "none"), e.append(t), this.surfaces.set(e, t);
 		}
 		return this.surfaces.get(e);
@@ -266,8 +266,8 @@ var Z = class {
 		}, o;
 	}
 	path(e, t = !0) {
-		let n = document.createElementNS(q, "path");
-		return n.dataset.stroke = e.id, n.setAttribute("d", Y(J(e, t))), n.setAttribute("fill", e.color), n.setAttribute("opacity", e.tool === "highlighter" ? "0.3" : "1"), n;
+		let n = document.createElementNS(G, "path");
+		return n.dataset.stroke = e.id, n.setAttribute("d", q(K(e, t))), n.setAttribute("fill", e.color), n.setAttribute("opacity", e.tool === "highlighter" ? "0.3" : "1"), n;
 	}
 	render(e, t, n) {
 		let r = this.surface(e);
@@ -288,7 +288,7 @@ var Z = class {
 		for (let e of this.surfaces.values()) e.remove();
 		this.surfaces.clear();
 	}
-}, te = class {
+}, X = class {
 	constructor(e = 100) {
 		this.limit = e, this.entries = /* @__PURE__ */ new Map();
 	}
@@ -316,7 +316,7 @@ var Z = class {
 	clear() {
 		this.entries.clear();
 	}
-}, ne = class {
+}, re = class {
 	constructor(e = globalThis.indexedDB) {
 		this.factory = e, this.db = null;
 	}
@@ -347,10 +347,10 @@ var Z = class {
 };
 //#endregion
 //#region src/storage.js
-function re(e) {
+function Z(e) {
 	if (e.adapter) return e.adapter;
 	if (e.type !== "indexeddb") throw Error("Unknown storage type; supply a storage adapter");
-	return new ne();
+	return new re();
 }
 function Q(e) {
 	return {
@@ -409,26 +409,55 @@ function oe(e, t) {
 		capture: !0,
 		signal: n.signal,
 		...i
-	}), s = (e) => {
+	}), s = document.createElement("span");
+	s.className = "reveal-ink-pen-cursor", s.hidden = !0, s.setAttribute("aria-hidden", "true"), e.append(s);
+	let c = null, l = () => {
+		s.hidden = !0, c = null;
+	};
+	function u(n) {
+		if (n.pointerType === "touch") return;
+		if (n.pointerType !== "pen" || !t.enabled()) {
+			l();
+			return;
+		}
+		let r = e.getBoundingClientRect(), i = document.elementFromPoint(n.clientX, n.clientY);
+		if (!r.width || !r.height || n.clientX < r.left || n.clientX > r.right || n.clientY < r.top || n.clientY > r.bottom || !i || !e.contains(i) || i.closest("button, input, select, textarea, .reveal-ink-toolbar, .reveal-ink-palette, .reveal-ink-scroll, .controls")) {
+			l();
+			return;
+		}
+		let a = e.offsetWidth / r.width, o = e.offsetHeight / r.height;
+		s.style.left = `${(n.clientX - r.left) * a - e.clientLeft}px`, s.style.top = `${(n.clientY - r.top) * o - e.clientTop}px`, s.style.width = `${6 * a}px`, s.style.height = `${6 * o}px`, c = n.pointerId, s.hidden = !1;
+	}
+	o("pointerdown", u), o("pointermove", u);
+	for (let t of [
+		"pointerup",
+		"pointercancel",
+		"lostpointercapture",
+		"pointerleave"
+	]) o(t, (n) => {
+		n.pointerId === c && (t !== "pointerleave" || n.target === e) && l();
+	});
+	window.addEventListener("blur", l, { signal: n.signal });
+	let d = (e) => {
 		e.cancelable && e.preventDefault(), e.stopImmediatePropagation();
 	};
-	function c(e) {
+	function f(e) {
 		let t = e.getCoalescedEvents?.() || [];
-		return t.length || (t = [e]), t.map((e) => U(e, r.rect, !0));
+		return t.length || (t = [e]), t.map((e) => V(e, r.rect, !0));
 	}
-	function l(n) {
+	function p(n) {
 		if (!r || n && n.pointerId !== r.id) return;
 		let o = r;
 		r = null, cancelAnimationFrame(i), i = 0, t.finish(), e.hasPointerCapture?.(o.id) && e.releasePointerCapture(o.id), a = performance.now() + 400;
 	}
-	let u = (e) => e.closest(".reveal-ink-toolbar, .reveal-ink-toggle, .reveal-ink-palette, .reveal-ink-canvas-return, .reveal-ink-scroll");
+	let m = (e) => e.closest(".reveal-ink-toolbar, .reveal-ink-toggle, .reveal-ink-palette, .reveal-ink-canvas-return, .reveal-ink-scroll");
 	o("pointerdown", (n) => {
 		if (t.enabled() && n.target.closest(".controls")) {
-			s(n);
+			d(n);
 			return;
 		}
 		if (r) {
-			n.pointerType !== "touch" && s(n);
+			n.pointerType !== "touch" && d(n);
 			return;
 		}
 		if (!["pen", "mouse"].includes(n.pointerType) || n.button !== 0 || !t.enabled() || n.target.closest("button, input, select, textarea, .reveal-ink-toolbar, .controls")) return;
@@ -436,53 +465,55 @@ function oe(e, t) {
 		if (!i) return;
 		let a = i.getBoundingClientRect();
 		if (!(n.clientX < a.left || n.clientX > a.right || n.clientY < a.top || n.clientY > a.bottom)) {
-			s(n), r = {
+			d(n), r = {
 				id: n.pointerId,
 				rect: i.inkRect || a
-			}, t.start(U(n, r.rect, !0), n.pointerType);
+			}, t.start(V(n, r.rect, !0), n.pointerType);
 			try {
 				e.setPointerCapture(n.pointerId);
 			} catch {}
 		}
 	}), o("pointermove", (e) => {
-		r && r.id === e.pointerId && (s(e), t.move(c(e)), i ||= requestAnimationFrame(() => {
+		r && r.id === e.pointerId && (d(e), t.move(f(e)), i ||= requestAnimationFrame(() => {
 			i = 0, t.preview();
 		}));
 	}), o("pointerup", (e) => {
-		r && r.id === e.pointerId && (s(e), t.move([U({
+		r && r.id === e.pointerId && (d(e), t.move([V({
 			clientX: e.clientX,
 			clientY: e.clientY,
 			pressure: t.pressure()
-		}, r.rect, !0)]), l(e));
-	}), o("pointercancel", l), o("lostpointercapture", l), o("wheel", (n) => {
-		t.canvas() && !u(n.target) && (s(n), r || t.scroll(n.deltaY * (n.deltaMode === 1 ? 16 : n.deltaMode === 2 ? e.clientHeight : 1)));
+		}, r.rect, !0)]), p(e));
+	}), o("pointercancel", p), o("lostpointercapture", p), o("wheel", (n) => {
+		t.canvas() && !m(n.target) && (d(n), r || t.scroll(n.deltaY * (n.deltaMode === 1 ? 16 : n.deltaMode === 2 ? e.clientHeight : 1)));
 	}, { passive: !1 });
-	let d = null;
+	let h = null;
 	for (let e of [
 		"touchstart",
 		"touchmove",
 		"touchend",
 		"touchcancel"
 	]) o(e, (n) => {
-		if (t.canvas() && !u(n.target)) {
-			if (s(n), !r && n.touches.length === 2) {
+		if (t.canvas() && !m(n.target)) {
+			if (d(n), !r && n.touches.length === 2) {
 				let r = (n.touches[0].clientY + n.touches[1].clientY) / 2;
-				e === "touchmove" && d !== null && t.scroll(d - r), d = r;
-			} else d = null;
+				e === "touchmove" && h !== null && t.scroll(h - r), h = r;
+			} else h = null;
 			return;
 		}
-		d = null, t.enabled() && (r || !u(n.target)) && s(n);
+		h = null, t.enabled() && (r || !m(n.target)) && d(n);
 	}, { passive: !1 });
 	return o("click", (e) => {
 		if (t.enabled() && e.target.closest(".controls")) {
-			s(e);
+			d(e);
 			return;
 		}
-		performance.now() < a && !e.target.closest(".reveal-ink-toolbar, .reveal-ink-toggle, .reveal-ink-palette, .reveal-ink-scroll, .reveal-ink-canvas-return") && s(e);
+		performance.now() < a && !e.target.closest(".reveal-ink-toolbar, .reveal-ink-toggle, .reveal-ink-palette, .reveal-ink-scroll, .reveal-ink-canvas-return") && d(e);
 	}), {
-		finish: () => l(),
+		finish() {
+			l(), p();
+		},
 		destroy() {
-			l(), n.abort(), cancelAnimationFrame(i);
+			l(), p(), n.abort(), cancelAnimationFrame(i), s.remove();
 		}
 	};
 }
@@ -605,7 +636,7 @@ function se(e, t, n) {
 //#endregion
 //#region src/plugin.js
 function ce() {
-	let e, t, n, r, i, a, o, s, c, l, u = !1, d, f = "pen", p = null, m = null, h = null, g = !1, _ = !1, v = Promise.resolve(), y = 0, b = new te(), x = [], S = /* @__PURE__ */ new Map(), C = () => u && S.get(d) || 0, w = () => Math.min(90, A().reduce((e, t) => t.points.reduce((e, t) => Math.max(e, t[1] + 1), e), Math.max(3, C() + 2)));
+	let e, t, n, r, i, a, o, s, c, l, u = !1, d, f = "pen", p = null, m = null, h = null, g = !1, _ = !1, v = Promise.resolve(), y = 0, b = new X(), x = [], S = /* @__PURE__ */ new Map(), C = () => u && S.get(d) || 0, w = () => Math.min(90, A().reduce((e, t) => t.points.reduce((e, t) => Math.max(e, t[1] + 1), e), Math.max(3, C() + 2)));
 	function T() {
 		if (!c) return;
 		let { width: n, height: r } = O();
@@ -623,7 +654,7 @@ function ce() {
 	function P() {
 		c && (o.surface(c).classList.toggle("ink-extra-canvas", u), o.render(c, A(), k()));
 	}
-	function F() {
+	function ee() {
 		if (!_ || !n.storage.autosave) return v;
 		let e = structuredClone(r), t = ++y;
 		return a.status("Saving…"), v = v.then(() => i.save(n.presentation, e)).then(() => {
@@ -632,24 +663,24 @@ function ce() {
 			g || a.status("Save failed — export a backup", !0), console.error("Reveal Ink:", e);
 		}), v;
 	}
-	function I(e) {
-		e !== A() && (b.record(l, e, A()), F()), P(), N();
+	function F(e) {
+		e !== A() && (b.record(l, e, A()), ee()), P(), N();
 	}
-	function ee() {
+	function te() {
 		if (!m) return;
 		p && (r.slides[l] = [...m, p]);
 		let e = m;
-		m = null, p = null, h = null, I(e);
+		m = null, p = null, h = null, F(e);
 	}
-	function L() {
+	function ne() {
 		s?.finish();
 		let t = e.getCurrentSlide();
-		c !== t && (c && o.surface(c).classList.remove("ink-extra-canvas"), u = !1), c = t, c && (d = G(c, e.getIndices(c)), l = u ? `canvas:${d}` : d, T(), P(), N());
+		c !== t && (c && o.surface(c).classList.remove("ink-extra-canvas"), u = !1), c = t, c && (d = U(c, e.getIndices(c)), l = u ? `canvas:${d}` : d, T(), P(), N());
 	}
-	function R() {
+	function I() {
 		s?.finish(), c && (u = !u, l = u ? `canvas:${d}` : d, T(), P(), N());
 	}
-	function z(e) {
+	function L(e) {
 		if (![
 			"pen",
 			"highlighter",
@@ -658,20 +689,20 @@ function ce() {
 		].includes(e)) throw Error("Unknown ink tool");
 		s?.finish(), f = e, c && N();
 	}
-	function B(e) {
+	function R(e) {
 		if (s?.finish(), !c) return;
 		let t = b[e](l);
-		t && (r.slides[l] = t, P(), N(), F());
+		t && (r.slides[l] = t, P(), N(), ee());
 	}
-	function V(e) {
-		let t = A().filter((t) => !X(t, h || e, e, k(), n.eraser.radius));
+	function z(e) {
+		let t = A().filter((t) => !J(t, h || e, e, k(), n.eraser.radius));
 		t.length !== A().length && (r.slides[l] = t), h = e;
 	}
-	async function H(e) {
+	async function B(e) {
 		let t = $(e, n.presentation);
-		s?.finish(), r = t, b.clear(), P(), N(), await F();
+		s?.finish(), r = t, b.clear(), P(), N(), await ee();
 	}
-	let U = {
+	let V = {
 		id: "ink",
 		async init(d) {
 			e = d;
@@ -706,16 +737,16 @@ function ce() {
 					autosave: !0,
 					...v.storage
 				}
-			}, t = e.getRevealElement(), o = new Z(), r = Q(n.presentation), a = se(t, {
-				tool: z,
-				canvas: R,
+			}, t = e.getRevealElement(), o = new Y(), r = Q(n.presentation), a = se(t, {
+				tool: L,
+				canvas: I,
 				scrollTo: E,
 				scrollBy: (e) => E(C() + e),
 				filter(e, t) {
 					s?.finish(), D()[e] = t;
 				},
-				undo: () => B("undo"),
-				redo: () => B("redo"),
+				undo: () => R("undo"),
+				redo: () => R("redo"),
 				color(e) {
 					s?.finish(), f === "eraser" && (f = "pen"), D().color = e, N();
 				},
@@ -725,7 +756,7 @@ function ce() {
 				clear() {
 					if (s?.finish(), !c || !A().length) return;
 					let e = A();
-					r.slides[l] = [], I(e);
+					r.slides[l] = [], F(e);
 				},
 				export() {
 					s?.finish(), ae(r);
@@ -733,14 +764,14 @@ function ce() {
 				async import(e) {
 					try {
 						if (e.size > 52428800) throw Error("Annotation file is too large");
-						await H(await e.text());
+						await B(await e.text());
 					} catch (e) {
 						a.status(`Import failed: ${e.message}`, !0);
 					}
 				}
 			}, n), a.hide(!0);
 			try {
-				i = re(n.storage), await i.open();
+				i = Z(n.storage), await i.open();
 				let e = await i.load(n.presentation);
 				e && (r = $(e, n.presentation)), _ = !0, a.status(n.storage.autosave ? "" : "Autosave off — export to keep", !n.storage.autosave);
 			} catch (e) {
@@ -757,7 +788,7 @@ function ce() {
 				scroll: (t) => E(C() + t / (O().height * e.getScale())),
 				start(e, t) {
 					if (a.collapse(), m = A(), h = e, f === "eraser") {
-						V(e), P();
+						z(e), P();
 						return;
 					}
 					let n = D();
@@ -780,13 +811,13 @@ function ce() {
 					for (let t of e) if (p) {
 						let e = p.points.at(-1);
 						(Math.hypot((t[0] - e[0]) * 960, (t[1] - e[1]) * 960 / k()) > .1 || t[2] !== e[2]) && p.points.push(t);
-					} else V(t);
+					} else z(t);
 				},
 				preview() {
 					p ? o.preview(c, p) : P();
 				},
 				pressure: () => p?.points.at(-1)?.[2] || .5,
-				finish: ee
+				finish: te
 			});
 			for (let e of [
 				"ready",
@@ -798,41 +829,41 @@ function ce() {
 				"resumed",
 				"scrollviewactivated",
 				"scrollviewdeactivated"
-			]) j(e, L);
+			]) j(e, ne);
 			let y = () => s?.finish();
 			window.addEventListener("pagehide", y);
 			let b = () => {
 				document.hidden && y();
 			};
-			document.addEventListener("visibilitychange", b), U.cleanup = () => {
+			document.addEventListener("visibilitychange", b), V.cleanup = () => {
 				window.removeEventListener("pagehide", y), document.removeEventListener("visibilitychange", b);
-			}, e.isReady() && L();
+			}, e.isReady() && ne();
 		},
-		setTool: z,
-		toggleCanvas: R,
+		setTool: L,
+		toggleCanvas: I,
 		scrollCanvas: E,
-		undo: () => B("undo"),
-		redo: () => B("redo"),
+		undo: () => R("undo"),
+		redo: () => R("redo"),
 		clear() {
 			if (s?.finish(), c && A().length) {
 				let e = A();
-				r.slides[l] = [], I(e);
+				r.slides[l] = [], F(e);
 			}
 		},
 		exportJSON() {
 			return s?.finish(), ie(r);
 		},
-		importJSON: H,
+		importJSON: B,
 		flush() {
 			return s?.finish(), v;
 		},
 		async destroy() {
 			s?.destroy(), g = !0;
 			for (let [t, n] of x) e.off(t, n);
-			U.cleanup?.(), a?.destroy(), o?.destroy(), t?.classList.remove("ink-active"), await v, i?.close();
+			V.cleanup?.(), a?.destroy(), o?.destroy(), t?.classList.remove("ink-active"), await v, i?.close();
 		}
 	};
-	return U;
+	return V;
 }
 //#endregion
 export { ce as default };

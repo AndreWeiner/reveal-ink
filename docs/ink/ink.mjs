@@ -258,7 +258,11 @@ var Y = class {
 	}
 	layout(e, t, n, r, i, a = 0) {
 		let o = this.surface(e), s = r.getBoundingClientRect(), c = s.width / i, l = s.height / i, u = (c - t) / 2, d = (l - n) / 2;
-		return o.style.width = `${c}px`, o.style.height = `${l}px`, o.style.left = `${-u}px`, o.style.top = `${-e.offsetTop - d}px`, o.setAttribute("viewBox", `${-u * 960 / t} ${(-d + a * n) * 960 / t} ${c * 960 / t} ${l * 960 / t}`), o.inkRect = {
+		if (o.style.width = `${c}px`, o.style.height = `${l}px`, o.style.left = `${-u}px`, o.style.top = `${-e.offsetTop - d}px`, o.setAttribute("viewBox", `${-u * 960 / t} ${(-d + a * n) * 960 / t} ${c * 960 / t} ${l * 960 / t}`), /Firefox\//.test(navigator.userAgent)) {
+			let t = e.getBoundingClientRect();
+			o.style.left = `${(s.left - t.left) / i}px`, o.style.top = `${(s.top - t.top) / i}px`;
+		}
+		return o.inkRect = {
 			left: s.left + u * i,
 			top: s.top + d * i - a * n * i,
 			width: t * i,

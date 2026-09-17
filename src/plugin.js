@@ -167,13 +167,28 @@ export default function RevealInk() {
         pressure: () => draft?.points.at(-1)?.[2] || 0.5,
         finish
       });
-      for (const name of ['ready', 'slidechanged', 'resize', 'overviewshown', 'overviewhidden', 'paused', 'resumed', 'scrollviewactivated', 'scrollviewdeactivated']) on(name, refresh);
+      let settleFrame;
+      const refreshWhenCentered = (attempt = 0) => {
+        const current = reveal.getCurrentSlide();
+        const viewport = root.getBoundingClientRect();
+        const rect = current?.getBoundingClientRect();
+        const centered = rect && Math.abs((rect.left+rect.width/2) - (viewport.left+viewport.width/2)) < 2;
+        if (centered || attempt >= 120) { refresh(); settleFrame = 0; return; }
+        settleFrame = requestAnimationFrame(() => refreshWhenCentered(attempt+1));
+      };
+      const changed = () => {
+        refresh();
+        cancelAnimationFrame(settleFrame);
+        settleFrame = requestAnimationFrame(() => refreshWhenCentered());
+      };
+      on('slidechanged', changed);
+      for (const name of ['ready', 'slidetransitionend', 'resize', 'overviewshown', 'overviewhidden', 'paused', 'resumed', 'scrollviewactivated', 'scrollviewdeactivated']) on(name, refresh);
       // Flush the current partial stroke before a tab is hidden or navigated away.
       const flush = () => input?.finish();
       window.addEventListener('pagehide', flush);
       const visibility = () => { if (document.hidden) flush(); };
       document.addEventListener('visibilitychange', visibility);
-      api.cleanup = () => { window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', visibility); };
+      api.cleanup = () => { cancelAnimationFrame(settleFrame); window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', visibility); };
       if (reveal.isReady()) refresh();
     },
     setTool, toggleCanvas, scrollCanvas: scrollTo,

@@ -50,6 +50,23 @@ export class Renderer {
     svg.style.width = `${fullWidth}px`; svg.style.height = `${fullHeight}px`;
     svg.style.left = `${-padX}px`; svg.style.top = `${-slide.offsetTop-padY}px`;
     svg.setAttribute('viewBox', `${-padX*MODEL_WIDTH/width} ${(-padY + scroll*height)*MODEL_WIDTH/width} ${fullWidth*MODEL_WIDTH/width} ${fullHeight*MODEL_WIDTH/width}`);
+    // Firefox resolves the SVG containing block differently on the dynamically
+    // rendered flashcard slide. Keep the established placement everywhere else.
+    if (/Firefox\//.test(navigator.userAgent) && slide.matches('[data-flashcards]')) {
+      const slideBounds = slide.getBoundingClientRect();
+      const slideCenter = slideBounds.left + slideBounds.width/2;
+      const viewportCenter = bounds.left + bounds.width/2;
+      // slidechanged fires before horizontal transitions finish. Anchoring from
+      // that transient off-screen rect moves saved ink onto an adjacent slide.
+      if (Math.abs(slideCenter-viewportCenter) < 2) {
+        const renderedScale = slideBounds.width / slide.offsetWidth;
+        svg.style.left = `${(bounds.left-slideBounds.left)/renderedScale}px`;
+        svg.style.top = `${(bounds.top-slideBounds.top)/renderedScale}px`;
+        const positioned = svg.getBoundingClientRect();
+        svg.style.left = `${parseFloat(svg.style.left) + (bounds.left-positioned.left)/renderedScale}px`;
+        svg.style.top = `${parseFloat(svg.style.top) + (bounds.top-positioned.top)/renderedScale}px`;
+      }
+    }
     svg.inkRect = { left: bounds.left + padX*scale, top: bounds.top + padY*scale - scroll*height*scale,
       width: width*scale, height: height*scale };
     return svg;

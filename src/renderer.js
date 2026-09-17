@@ -50,15 +50,6 @@ export class Renderer {
     svg.style.width = `${fullWidth}px`; svg.style.height = `${fullHeight}px`;
     svg.style.left = `${-padX}px`; svg.style.top = `${-slide.offsetTop-padY}px`;
     svg.setAttribute('viewBox', `${-padX*MODEL_WIDTH/width} ${(-padY + scroll*height)*MODEL_WIDTH/width} ${fullWidth*MODEL_WIDTH/width} ${fullHeight*MODEL_WIDTH/width}`);
-    // Firefox can resolve an absolutely positioned SVG inside Reveal's transformed,
-    // vertically centered slide against a different containing block than HTML nodes.
-    // Align the surface from measured viewport bounds instead of Firefox's SVG
-    // containing-block offsets. Other browsers keep the established placement.
-    if (/Firefox\//.test(navigator.userAgent)) {
-      const slideBounds = slide.getBoundingClientRect();
-      svg.style.left = `${(bounds.left-slideBounds.left)/scale}px`;
-      svg.style.top = `${(bounds.top-slideBounds.top)/scale}px`;
-    }
     svg.inkRect = { left: bounds.left + padX*scale, top: bounds.top + padY*scale - scroll*height*scale,
       width: width*scale, height: height*scale };
     return svg;

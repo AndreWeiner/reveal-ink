@@ -1,6 +1,6 @@
 {
   "name": "reveal-ink",
-  "version": "0.3.5",
+  "version": "0.3.4",
   "private": true,
   "description": "Pressure-sensitive vector handwriting for Reveal.js",
   "type": "module",

@@ -118,44 +118,44 @@ function te(e, t, n) {
 		return t && (i = o(e, r.distance, n)), (e + i) / 2;
 	}, e[0].pressure);
 }
-function ne(e, n = {}) {
-	let { size: r = 16, smoothing: a = .5, thinning: f = .5, simulatePressure: m = !0, easing: v = (e) => e, start: y = {}, end: x = {}, last: S = !1 } = n, { cap: C = !0, easing: T = (e) => e * (2 - e) } = y, { cap: D = !0, easing: ne = (e) => --e * e * e + 1 } = x;
+function I(e, n = {}) {
+	let { size: r = 16, smoothing: a = .5, thinning: f = .5, simulatePressure: m = !0, easing: v = (e) => e, start: y = {}, end: x = {}, last: S = !1 } = n, { cap: C = !0, easing: T = (e) => e * (2 - e) } = y, { cap: D = !0, easing: I = (e) => --e * e * e + 1 } = x;
 	if (e.length === 0 || r <= 0) return [];
-	let I = e[e.length - 1].runningLength, L = F(y.taper, r, I), R = F(x.taper, r, I), z = (r * a) ** 2, B = [], V = [], H = te(e, m, r), U = i(r, f, e[e.length - 1].pressure, v), W, G = e[0].vector, K = e[0].point, q = K, J = K, Y = q, X = !1;
+	let L = e[e.length - 1].runningLength, R = F(y.taper, r, L), z = F(x.taper, r, L), B = (r * a) ** 2, V = [], H = [], U = te(e, m, r), W = i(r, f, e[e.length - 1].pressure, v), G, K = e[0].vector, q = e[0].point, J = q, Y = q, X = J, ne = !1;
 	for (let n = 0; n < e.length; n++) {
 		let { pressure: a } = e[n], { point: s, vector: h, distance: y, runningLength: x } = e[n], S = n === e.length - 1;
-		if (!S && I - x < 3) continue;
-		f ? (m && (a = o(H, y, r)), U = i(r, f, a, v)) : U = r / 2, W === void 0 && (W = U);
-		let C = x < L ? T(x / L) : 1, D = I - x < R ? ne((I - x) / R) : 1;
-		U = Math.max(.01, U * Math.min(C, D));
-		let j = (S ? e[n] : e[n + 1]).vector, M = S ? 1 : _(h, j), N = _(h, G) < 0 && !X, P = M !== null && M < 0;
+		if (!S && L - x < 3) continue;
+		f ? (m && (a = o(U, y, r)), W = i(r, f, a, v)) : W = r / 2, G === void 0 && (G = W);
+		let C = x < R ? T(x / R) : 1, D = L - x < z ? I((L - x) / z) : 1;
+		W = Math.max(.01, W * Math.min(C, D));
+		let j = (S ? e[n] : e[n + 1]).vector, M = S ? 1 : _(h, j), N = _(h, K) < 0 && !ne, P = M !== null && M < 0;
 		if (N || P) {
-			g(O, G), p(O, O, U);
-			for (let e = 0; e <= 1; e += .07692307692307693) d(k, s, O), w(k, k, s, t * e), J = [k[0], k[1]], B.push(J), l(A, s, O), w(A, A, s, t * -e), Y = [A[0], A[1]], V.push(Y);
-			K = J, q = Y, P && (X = !0);
+			g(O, K), p(O, O, W);
+			for (let e = 0; e <= 1; e += .07692307692307693) d(k, s, O), w(k, k, s, t * e), Y = [k[0], k[1]], V.push(Y), l(A, s, O), w(A, A, s, t * -e), X = [A[0], A[1]], H.push(X);
+			q = Y, J = X, P && (ne = !0);
 			continue;
 		}
-		if (X = !1, S) {
-			g(O, h), p(O, O, U), B.push(u(s, O)), V.push(c(s, O));
+		if (ne = !1, S) {
+			g(O, h), p(O, O, W), V.push(u(s, O)), H.push(c(s, O));
 			continue;
 		}
-		E(O, j, h, M), g(O, O), p(O, O, U), d(k, s, O), J = [k[0], k[1]], (n <= 1 || b(K, J) > z) && (B.push(J), K = J), l(A, s, O), Y = [A[0], A[1]], (n <= 1 || b(q, Y) > z) && (V.push(Y), q = Y), H = a, G = h;
+		E(O, j, h, M), g(O, O), p(O, O, W), d(k, s, O), Y = [k[0], k[1]], (n <= 1 || b(q, Y) > B) && (V.push(Y), q = Y), l(A, s, O), X = [A[0], A[1]], (n <= 1 || b(J, X) > B) && (H.push(X), J = X), U = a, K = h;
 	}
 	let re = [e[0].point[0], e[0].point[1]], Z = e.length > 1 ? [e[e.length - 1].point[0], e[e.length - 1].point[1]] : c(e[0].point, [1, 1]), Q = [], $ = [];
 	if (e.length === 1) {
-		if (!(L || R) || S) return j(re, W || U);
+		if (!(R || z) || S) return j(re, G || W);
 	} else {
-		L || R && e.length === 1 || (C ? Q.push(...M(re, V[0], 13)) : Q.push(...N(re, B[0], V[0])));
+		R || z && e.length === 1 || (C ? Q.push(...M(re, H[0], 13)) : Q.push(...N(re, V[0], H[0])));
 		let t = h(s(e[e.length - 1].vector));
-		R || L && e.length === 1 ? $.push(Z) : D ? $.push(...P(Z, t, U, 29)) : $.push(...ee(Z, t, U));
+		z || R && e.length === 1 ? $.push(Z) : D ? $.push(...P(Z, t, W, 29)) : $.push(...ee(Z, t, W));
 	}
-	return B.concat($, V.reverse(), Q);
+	return V.concat($, H.reverse(), Q);
 }
-var I = [0, 0];
-function L(e) {
+var L = [0, 0];
+function R(e) {
 	return e != null && e >= 0;
 }
-function R(e, t = {}) {
+function z(e, t = {}) {
 	let { streamline: i = .5, size: a = 16, last: o = !1 } = t;
 	if (e.length === 0) return [];
 	let s = .15 + (1 - i) * .85, l = Array.isArray(e[0]) ? e : e.map(({ x: e, y: t, pressure: r = n }) => [
@@ -171,7 +171,7 @@ function R(e, t = {}) {
 	l.length === 1 && (l = [...l, [...c(l[0], r), ...l[0].slice(2)]]);
 	let u = [{
 		point: [l[0][0], l[0][1]],
-		pressure: L(l[0][2]) ? l[0][2] : .25,
+		pressure: R(l[0][2]) ? l[0][2] : .25,
 		vector: [...r],
 		distance: 0,
 		runningLength: 0
@@ -184,81 +184,90 @@ function R(e, t = {}) {
 			if (p < a) continue;
 			f = !0;
 		}
-		d(I, m.point, t), m = {
+		d(L, m.point, t), m = {
 			point: t,
-			pressure: L(l[e][2]) ? l[e][2] : n,
-			vector: x(I),
+			pressure: R(l[e][2]) ? l[e][2] : n,
+			vector: x(L),
 			distance: r,
 			runningLength: p
 		}, u.push(m);
 	}
 	return u[0].vector = u[1]?.vector || [0, 0], u;
 }
-function z(e, t = {}) {
-	return ne(R(e, t), t);
+function B(e, t = {}) {
+	return I(z(e, t), t);
 }
 //#endregion
 //#region src/coordinates.js
-var B = (e, t = 0, n = 1) => Math.max(t, Math.min(n, e));
-function V(e, t, n = !1) {
+var V = (e, t = 0, n = 1) => Math.max(t, Math.min(n, e));
+function H(e, t, n = !1) {
 	if (!(t.width > 0 && t.height > 0)) throw Error("Ink surface has no size");
 	return [
-		B((e.clientX - t.left) / t.width, n ? -100 : 0, n ? 100 : 1),
-		B((e.clientY - t.top) / t.height, n ? -100 : 0, n ? 100 : 1),
-		B(e.pressure > 0 ? e.pressure : .5)
+		V((e.clientX - t.left) / t.width, n ? -100 : 0, n ? 100 : 1),
+		V((e.clientY - t.top) / t.height, n ? -100 : 0, n ? 100 : 1),
+		V(e.pressure > 0 ? e.pressure : .5)
 	];
 }
-function H([e, t, n], r, i) {
+function U([e, t, n], r, i) {
 	return [
 		e * r,
 		t * i,
 		n
 	];
 }
-function U(e, t) {
+function W(e, t) {
 	return e.id ? `id:${e.id}` : `index:${t.h}:${t.v || 0}`;
 }
-function W(e, t, n) {
-	let r = n[0] - t[0], i = n[1] - t[1], a = r || i ? B(((e[0] - t[0]) * r + (e[1] - t[1]) * i) / (r * r + i * i)) : 0;
+function G(e, t, n) {
+	let r = n[0] - t[0], i = n[1] - t[1], a = r || i ? V(((e[0] - t[0]) * r + (e[1] - t[1]) * i) / (r * r + i * i)) : 0;
 	return Math.hypot(e[0] - t[0] - a * r, e[1] - t[1] - a * i);
 }
 //#endregion
 //#region src/renderer.js
-var G = "http://www.w3.org/2000/svg";
-function K(e, t = !0) {
-	return z(e.points.map((t) => H(t, 960, 960 / e.aspect)), {
+var K = "http://www.w3.org/2000/svg";
+function q(e, t = !0) {
+	return B(e.points.map((t) => U(t, 960, 960 / e.aspect)), {
 		size: e.width,
 		...e.options,
 		last: t
 	});
 }
-function q(e) {
+function J(e) {
 	if (!e.length) return "";
 	let t = (e, t) => [(e[0] + t[0]) / 2, (e[1] + t[1]) / 2];
 	return `M ${t(e.at(-1), e[0]).join(" ")} ` + e.map((n, r) => `Q ${n.join(" ")} ${t(n, e[(r + 1) % e.length]).join(" ")}`).join(" ") + " Z";
 }
-function J(e, t, n, r, i) {
-	let a = K(e).map(([t, n]) => [t, n * e.aspect / r]), o = H(t, 960, 960 / r), s = H(n, 960, 960 / r), c = (e, t, n) => (t[0] - e[0]) * (n[1] - e[1]) - (t[1] - e[1]) * (n[0] - e[0]), l = !1;
+function Y(e, t, n, r, i) {
+	let a = q(e).map(([t, n]) => [t, n * e.aspect / r]), o = U(t, 960, 960 / r), s = U(n, 960, 960 / r), c = (e, t, n) => (t[0] - e[0]) * (n[1] - e[1]) - (t[1] - e[1]) * (n[0] - e[0]), l = !1;
 	for (let e = 0, t = a.length - 1; e < a.length; t = e++) {
 		let n = a[e], r = a[t];
-		if (n[1] > o[1] != r[1] > o[1] && o[0] < (r[0] - n[0]) * (o[1] - n[1]) / (r[1] - n[1]) + n[0] && (l = !l), Math.min(W(n, o, s), W(r, o, s), W(o, n, r), W(s, n, r)) <= i || c(o, s, n) * c(o, s, r) < 0 && c(n, r, o) * c(n, r, s) < 0) return !0;
+		if (n[1] > o[1] != r[1] > o[1] && o[0] < (r[0] - n[0]) * (o[1] - n[1]) / (r[1] - n[1]) + n[0] && (l = !l), Math.min(G(n, o, s), G(r, o, s), G(o, n, r), G(s, n, r)) <= i || c(o, s, n) * c(o, s, r) < 0 && c(n, r, o) * c(n, r, s) < 0) return !0;
 	}
 	return l;
 }
-var Y = class {
+var X = class {
 	constructor() {
 		this.surfaces = /* @__PURE__ */ new Map();
 	}
 	surface(e) {
 		if (!this.surfaces.has(e)) {
-			let t = document.createElementNS(G, "svg");
+			let t = document.createElementNS(K, "svg");
 			t.classList.add("reveal-ink-surface"), t.setAttribute("aria-hidden", "true"), t.setAttribute("preserveAspectRatio", "none"), e.append(t), this.surfaces.set(e, t);
 		}
 		return this.surfaces.get(e);
 	}
 	layout(e, t, n, r, i, a = 0) {
 		let o = this.surface(e), s = r.getBoundingClientRect(), c = s.width / i, l = s.height / i, u = (c - t) / 2, d = (l - n) / 2;
-		return o.style.width = `${c}px`, o.style.height = `${l}px`, o.style.left = `${-u}px`, o.style.top = `${-e.offsetTop - d}px`, o.setAttribute("viewBox", `${-u * 960 / t} ${(-d + a * n) * 960 / t} ${c * 960 / t} ${l * 960 / t}`), o.inkRect = {
+		if (o.style.width = `${c}px`, o.style.height = `${l}px`, o.style.left = `${-u}px`, o.style.top = `${-e.offsetTop - d}px`, o.setAttribute("viewBox", `${-u * 960 / t} ${(-d + a * n) * 960 / t} ${c * 960 / t} ${l * 960 / t}`), /Firefox\//.test(navigator.userAgent) && e.matches("[data-flashcards]")) {
+			let t = e.getBoundingClientRect(), n = t.left + t.width / 2, r = s.left + s.width / 2;
+			if (Math.abs(n - r) < 2) {
+				let n = t.width / e.offsetWidth;
+				o.style.left = `${(s.left - t.left) / n}px`, o.style.top = `${(s.top - t.top) / n}px`;
+				let r = o.getBoundingClientRect();
+				o.style.left = `${parseFloat(o.style.left) + (s.left - r.left) / n}px`, o.style.top = `${parseFloat(o.style.top) + (s.top - r.top) / n}px`;
+			}
+		}
+		return o.inkRect = {
 			left: s.left + u * i,
 			top: s.top + d * i - a * n * i,
 			width: t * i,
@@ -266,8 +275,8 @@ var Y = class {
 		}, o;
 	}
 	path(e, t = !0) {
-		let n = document.createElementNS(G, "path");
-		return n.dataset.stroke = e.id, n.setAttribute("d", q(K(e, t))), n.setAttribute("fill", e.color), n.setAttribute("opacity", e.tool === "highlighter" ? "0.3" : "1"), n;
+		let n = document.createElementNS(K, "path");
+		return n.dataset.stroke = e.id, n.setAttribute("d", J(q(e, t))), n.setAttribute("fill", e.color), n.setAttribute("opacity", e.tool === "highlighter" ? "0.3" : "1"), n;
 	}
 	render(e, t, n) {
 		let r = this.surface(e);
@@ -288,7 +297,7 @@ var Y = class {
 		for (let e of this.surfaces.values()) e.remove();
 		this.surfaces.clear();
 	}
-}, X = class {
+}, ne = class {
 	constructor(e = 100) {
 		this.limit = e, this.entries = /* @__PURE__ */ new Map();
 	}
@@ -443,7 +452,7 @@ function oe(e, t) {
 	};
 	function f(e) {
 		let t = e.getCoalescedEvents?.() || [];
-		return t.length || (t = [e]), t.map((e) => V(e, r.rect, !0));
+		return t.length || (t = [e]), t.map((e) => H(e, r.rect, !0));
 	}
 	function p(n) {
 		if (!r || n && n.pointerId !== r.id) return;
@@ -468,7 +477,7 @@ function oe(e, t) {
 			d(n), r = {
 				id: n.pointerId,
 				rect: i.inkRect || a
-			}, t.start(V(n, r.rect, !0), n.pointerType);
+			}, t.start(H(n, r.rect, !0), n.pointerType);
 			try {
 				e.setPointerCapture(n.pointerId);
 			} catch {}
@@ -478,7 +487,7 @@ function oe(e, t) {
 			i = 0, t.preview();
 		}));
 	}), o("pointerup", (e) => {
-		r && r.id === e.pointerId && (d(e), t.move([V({
+		r && r.id === e.pointerId && (d(e), t.move([H({
 			clientX: e.clientX,
 			clientY: e.clientY,
 			pressure: t.pressure()
@@ -636,7 +645,7 @@ function se(e, t, n) {
 //#endregion
 //#region src/plugin.js
 function ce() {
-	let e, t, n, r, i, a, o, s, c, l, u = !1, d, f = "pen", p = null, m = null, h = null, g = !1, _ = !1, v = Promise.resolve(), y = 0, b = new X(), x = [], S = /* @__PURE__ */ new Map(), C = () => u && S.get(d) || 0, w = () => Math.min(90, A().reduce((e, t) => t.points.reduce((e, t) => Math.max(e, t[1] + 1), e), Math.max(3, C() + 2)));
+	let e, t, n, r, i, a, o, s, c, l, u = !1, d, f = "pen", p = null, m = null, h = null, g = !1, _ = !1, v = Promise.resolve(), y = 0, b = new ne(), x = [], S = /* @__PURE__ */ new Map(), C = () => u && S.get(d) || 0, w = () => Math.min(90, A().reduce((e, t) => t.points.reduce((e, t) => Math.max(e, t[1] + 1), e), Math.max(3, C() + 2)));
 	function T() {
 		if (!c) return;
 		let { width: n, height: r } = O();
@@ -672,15 +681,15 @@ function ce() {
 		let e = m;
 		m = null, p = null, h = null, F(e);
 	}
-	function ne() {
+	function I() {
 		s?.finish();
 		let t = e.getCurrentSlide();
-		c !== t && (c && o.surface(c).classList.remove("ink-extra-canvas"), u = !1), c = t, c && (d = U(c, e.getIndices(c)), l = u ? `canvas:${d}` : d, T(), P(), N());
+		c !== t && (c && o.surface(c).classList.remove("ink-extra-canvas"), u = !1), c = t, c && (d = W(c, e.getIndices(c)), l = u ? `canvas:${d}` : d, T(), P(), N());
 	}
-	function I() {
+	function L() {
 		s?.finish(), c && (u = !u, l = u ? `canvas:${d}` : d, T(), P(), N());
 	}
-	function L(e) {
+	function R(e) {
 		if (![
 			"pen",
 			"highlighter",
@@ -689,20 +698,20 @@ function ce() {
 		].includes(e)) throw Error("Unknown ink tool");
 		s?.finish(), f = e, c && N();
 	}
-	function R(e) {
+	function z(e) {
 		if (s?.finish(), !c) return;
 		let t = b[e](l);
 		t && (r.slides[l] = t, P(), N(), ee());
 	}
-	function z(e) {
-		let t = A().filter((t) => !J(t, h || e, e, k(), n.eraser.radius));
+	function B(e) {
+		let t = A().filter((t) => !Y(t, h || e, e, k(), n.eraser.radius));
 		t.length !== A().length && (r.slides[l] = t), h = e;
 	}
-	async function B(e) {
+	async function V(e) {
 		let t = $(e, n.presentation);
 		s?.finish(), r = t, b.clear(), P(), N(), await ee();
 	}
-	let V = {
+	let H = {
 		id: "ink",
 		async init(d) {
 			e = d;
@@ -737,16 +746,16 @@ function ce() {
 					autosave: !0,
 					...v.storage
 				}
-			}, t = e.getRevealElement(), o = new Y(), r = Q(n.presentation), a = se(t, {
-				tool: L,
-				canvas: I,
+			}, t = e.getRevealElement(), o = new X(), r = Q(n.presentation), a = se(t, {
+				tool: R,
+				canvas: L,
 				scrollTo: E,
 				scrollBy: (e) => E(C() + e),
 				filter(e, t) {
 					s?.finish(), D()[e] = t;
 				},
-				undo: () => R("undo"),
-				redo: () => R("redo"),
+				undo: () => z("undo"),
+				redo: () => z("redo"),
 				color(e) {
 					s?.finish(), f === "eraser" && (f = "pen"), D().color = e, N();
 				},
@@ -764,7 +773,7 @@ function ce() {
 				async import(e) {
 					try {
 						if (e.size > 52428800) throw Error("Annotation file is too large");
-						await B(await e.text());
+						await V(await e.text());
 					} catch (e) {
 						a.status(`Import failed: ${e.message}`, !0);
 					}
@@ -788,7 +797,7 @@ function ce() {
 				scroll: (t) => E(C() + t / (O().height * e.getScale())),
 				start(e, t) {
 					if (a.collapse(), m = A(), h = e, f === "eraser") {
-						z(e), P();
+						B(e), P();
 						return;
 					}
 					let n = D();
@@ -811,7 +820,7 @@ function ce() {
 					for (let t of e) if (p) {
 						let e = p.points.at(-1);
 						(Math.hypot((t[0] - e[0]) * 960, (t[1] - e[1]) * 960 / k()) > .1 || t[2] !== e[2]) && p.points.push(t);
-					} else z(t);
+					} else B(t);
 				},
 				preview() {
 					p ? o.preview(c, p) : P();
@@ -819,9 +828,20 @@ function ce() {
 				pressure: () => p?.points.at(-1)?.[2] || .5,
 				finish: te
 			});
+			let y, b = (n = 0) => {
+				let r = e.getCurrentSlide(), i = t.getBoundingClientRect(), a = r?.getBoundingClientRect();
+				if (a && Math.abs(a.left + a.width / 2 - (i.left + i.width / 2)) < 2 || n >= 120) {
+					I(), y = 0;
+					return;
+				}
+				y = requestAnimationFrame(() => b(n + 1));
+			};
+			j("slidechanged", () => {
+				I(), cancelAnimationFrame(y), y = requestAnimationFrame(() => b());
+			});
 			for (let e of [
 				"ready",
-				"slidechanged",
+				"slidetransitionend",
 				"resize",
 				"overviewshown",
 				"overviewhidden",
@@ -829,21 +849,21 @@ function ce() {
 				"resumed",
 				"scrollviewactivated",
 				"scrollviewdeactivated"
-			]) j(e, ne);
-			let y = () => s?.finish();
-			window.addEventListener("pagehide", y);
-			let b = () => {
-				document.hidden && y();
+			]) j(e, I);
+			let x = () => s?.finish();
+			window.addEventListener("pagehide", x);
+			let S = () => {
+				document.hidden && x();
 			};
-			document.addEventListener("visibilitychange", b), V.cleanup = () => {
-				window.removeEventListener("pagehide", y), document.removeEventListener("visibilitychange", b);
-			}, e.isReady() && ne();
+			document.addEventListener("visibilitychange", S), H.cleanup = () => {
+				cancelAnimationFrame(y), window.removeEventListener("pagehide", x), document.removeEventListener("visibilitychange", S);
+			}, e.isReady() && I();
 		},
-		setTool: L,
-		toggleCanvas: I,
+		setTool: R,
+		toggleCanvas: L,
 		scrollCanvas: E,
-		undo: () => R("undo"),
-		redo: () => R("redo"),
+		undo: () => z("undo"),
+		redo: () => z("redo"),
 		clear() {
 			if (s?.finish(), c && A().length) {
 				let e = A();
@@ -853,17 +873,17 @@ function ce() {
 		exportJSON() {
 			return s?.finish(), ie(r);
 		},
-		importJSON: B,
+		importJSON: V,
 		flush() {
 			return s?.finish(), v;
 		},
 		async destroy() {
 			s?.destroy(), g = !0;
 			for (let [t, n] of x) e.off(t, n);
-			V.cleanup?.(), a?.destroy(), o?.destroy(), t?.classList.remove("ink-active"), await v, i?.close();
+			H.cleanup?.(), a?.destroy(), o?.destroy(), t?.classList.remove("ink-active"), await v, i?.close();
 		}
 	};
-	return V;
+	return H;
 }
 //#endregion
 export { ce as default };

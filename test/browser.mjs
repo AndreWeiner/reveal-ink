@@ -8,7 +8,7 @@ const page=await browser.newPage(), errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 const url='http://127.0.0.1:8019/demo/index.html';
 const data=()=>page.evaluate(()=>JSON.parse(Reveal.getPlugin('ink').exportJSON()));
-const ready=()=>page.waitForFunction(()=>window.Reveal?.isReady() && document.querySelector('.reveal-ink-surface'));
+const ready=async()=>{await page.waitForFunction(()=>window.Reveal?.isReady() && document.querySelector('.reveal-ink-surface'));assert.equal(await page.$eval('[data-tool=\"navigate\"]', el=>el.getAttribute('aria-pressed')), 'true');await page.click('[data-tool=\"pen\"]');};
 async function pen(type='pen', cancel=false) {
   await page.evaluate((type,cancel)=>{
     const svg=document.querySelector('.present .reveal-ink-surface'), r=svg.getBoundingClientRect();
@@ -171,7 +171,9 @@ try {
   assert.equal(await offline.evaluate(() => JSON.parse(Reveal.getPlugin('ink').exportJSON()).version), 2);
   await offline.close();
   const pointerPage = await browser.newPage();
-  await pointerPage.goto(url); await pointerPage.waitForFunction(() => window.Reveal?.isReady());
+  await pointerPage.goto(url); await pointerPage.waitForFunction(() => window.Reveal?.isReady() && document.querySelector('.present > .reveal-ink-surface'));
+  assert.equal(await pointerPage.$eval('[data-tool=\"navigate\"]', el=>el.getAttribute('aria-pressed')), 'true');
+  await pointerPage.click('[data-tool=\"pen\"]');
   const pointer = (type, pointerType = 'pen', x = 400, y = 300) => pointerPage.evaluate(({type,pointerType,x,y}) => {
     document.elementFromPoint(x,y).dispatchEvent(new PointerEvent(type, {
       bubbles:true, pointerType, pointerId:pointerType === 'touch' ? 88 : 77,

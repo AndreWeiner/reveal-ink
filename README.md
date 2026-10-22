@@ -22,7 +22,7 @@ For an iPad on the same network, run `npm start -- --host 0.0.0.0` and open `htt
 
 A small red dot marks the stylus position during contact and whenever the device/browser supplies pen hover events. iPads without Pencil hover can only show it during contact. The dot is temporary and is not saved or exported; mouse input keeps the crosshair.
 
-1. Open a presentation that includes Reveal Ink. **Pen** is selected initially, with **white** ink; choose Black for a white slide background.
+1. Open a presentation that includes Reveal Ink. **Navigate** is selected initially. Select **Pen** to draw with **white** ink; choose Black for a white slide background.
 2. Write using an Apple Pencil/stylus, or hold the primary mouse button and drag. Finger input does not draw. Use Navigate mode for finger swipes or slide arrows; drawing mode blocks both to prevent palm navigation.
 3. To change ink, choose **Pen** or **Highlight**, then tap a preset in the vertical palette on the left edge. It stays visible while writing and hides in Navigate mode. Tap the eraser icon below the colors to erase; tap a color to return to the pen. For a custom color or to adjust **Width**, open **More**. Pen and highlighter keep separate settings during the session. These choices affect new strokes; existing annotations keep their colors and widths.
 4. Choose **Navigate** when you want normal mouse interaction with links or slide content. Return to Pen to write again.
@@ -30,7 +30,7 @@ A small red dot marks the stylus position during contact and whenever the device
 6. After a lecture, choose **More → Export JSON** to download a backup. Export includes annotations from **all slides in the current presentation**, including slides that are not visible. It contains vector strokes, not slide text, images, or screenshots.
 7. To restore or transfer notes, open the matching presentation in the destination browser and choose **More → Import JSON…**. Select the backup and confirm replacement. This replaces all annotations in that presentation, not only the current slide. Matching slide IDs (or fallback indices) are needed to display the notes on the correct slides.
 
-Notes are local to each browser/device; export/import is how you transfer them. Changing the default pen color does not recolor saved notes. Tool and color selections reset on reload; annotations persist.
+Notes are local to each browser/device; export/import is how you transfer them. Changing the default pen color does not recolor saved notes. The startup tool defaults to Navigate. Set `ink.initialTool` to `pen`, `highlighter`, or `eraser` to override it for a deck. Tool and color selections reset on reload; annotations persist.
 
 ### Color presets
 
@@ -76,20 +76,21 @@ npm run build
 node scripts/copy-release.mjs /path/to/lecture-repository
 ```
 
-This creates `plugin/ink/v0.3.5/` with the JavaScript, CSS, version, checksums and licenses. Keep these files together when distributing the lecture. It does not rewrite your lecture HTML.
+This creates `plugin/ink/v0.3.7/` with the JavaScript, CSS, version, checksums and licenses. Keep these files together when distributing the lecture. It does not rewrite your lecture HTML.
 
 Add the stylesheet in the HTML `<head>`. Load `ink.js` **after Reveal.js itself**, then append `RevealInk` to your existing `plugins` array and add the `ink` settings to your existing `Reveal.initialize` call. Keep any existing plugins such as math, markdown or notes; do not initialize Reveal a second time.
 
 For example, assuming the deck already loads Reveal.js:
 
 ```html
-<link rel="stylesheet" href="plugin/ink/v0.3.5/ink.css">
-<script src="plugin/ink/v0.3.5/ink.js"></script>
+<link rel="stylesheet" href="plugin/ink/v0.3.7/ink.css">
+<script src="plugin/ink/v0.3.7/ink.js"></script>
 <script>
 Reveal.initialize({
   plugins: [RevealInk],
   ink: {
     enabled: true,
+    initialTool: 'navigate',
     presentation: 'lecture-05',
     pen: {
       width: 3.5, color: '#ffffff', thinning: 0.2,
@@ -103,7 +104,7 @@ Reveal.initialize({
 </script>
 ```
 
-ES module: `import RevealInk from './plugin/ink/v0.3.5/ink.mjs'`. The factory creates an isolated plugin instance for each Reveal deck. Standard global registration uses `plugins: [RevealInk]`.
+ES module: `import RevealInk from './plugin/ink/v0.3.7/ink.mjs'`. The factory creates an isolated plugin instance for each Reveal deck. Standard global registration uses `plugins: [RevealInk]`.
 
 Use `const ink = Reveal.getPlugin('ink')` for:
 
@@ -177,6 +178,7 @@ The only third-party library bundled into the ink JavaScript is **perfect-freeha
 npm run build
 npm test
 npm run test:browser
+npm run test:alignment
 ```
 
 Browser tests use a temporary browser profile and local server. They cover synthetic pen/coalesced/pressure input, touch exclusion, real mouse capture, cancellation, erasing, history, import validation, IndexedDB reload, nested slides, resize, overview, links and cleanup. Automated tests cannot establish Apple Pencil feel.
@@ -202,10 +204,11 @@ npm ci
 npm test
 npm run build
 npm run test:browser
+npm run test:alignment
 node scripts/copy-release.mjs /path/to/lecture-repository
 ```
 
-The copy command creates `plugin/ink/v0.3.5/` in the destination, including JS, CSS, licenses, version and SHA-256 checksums. It refuses to replace an existing release with different contents. Update each lecture's script and stylesheet paths to the paths it prints. Include `RevealInk` in the plugin list. Commit the versioned assets with the lecture changes.
+The copy command creates `plugin/ink/v0.3.7/` in the destination, including JS, CSS, licenses, version and SHA-256 checksums. It refuses to replace an existing release with different contents. Update each lecture's script and stylesheet paths to the paths it prints. Include `RevealInk` in the plugin list. Commit the versioned assets with the lecture changes.
 
 For a later release, update the package version and lockfile, run the checks, commit and tag the source, then copy that new version to each lecture that should receive it. Old lecture releases stay unchanged until explicitly upgraded. The first local source tag is `v0.1.0`.
 
@@ -244,3 +247,13 @@ Under **More**, **Smoothing** adjusts outline roundness (default 0.35), and **St
 ## Publish the demo
 
 GitHub Pages serves the committed `docs/` folder from `main`. To update it, run `npm ci` and `npm run build:demo`, then commit and push the source changes together with `docs/`. The generated demo bundles Reveal.js, fonts, the ink plugin, and their licenses; no CDN or local server is needed. Annotations stay in the visitor’s browser.
+
+### Firefox alignment regression checks
+
+`npm run test:alignment` checks the actual ink-to-pointer alignment, late centering without a resize event, horizontal and vertical transitions, portrait/landscape resizing, extra canvas scrolling, and dynamic flashcard layout in Chromium. To run the same checks in an installed Firefox browser:
+
+```sh
+INK_TEST_BROWSER=firefox INK_FIREFOX_BIN=/usr/bin/firefox npm run test:alignment
+```
+
+Set `INK_FIREFOX_BIN` to your Firefox executable path, or omit it when Puppeteer has a managed Firefox installation.

@@ -1,3 +1,4 @@
+import { initialTool } from './tools.js';
 import { Renderer, MODEL_WIDTH, hitStroke } from './renderer.js';
 import { slideKey } from './coordinates.js';
 import { History } from './strokes.js';
@@ -9,7 +10,7 @@ import { createToolbar } from './toolbar.js';
 export default function RevealInk() {
   let reveal, root, config, data, storage, toolbar, renderer, input, slide, key;
   let canvas = false, baseKey;
-  let tool = 'pen', draft = null, before = null, last = null, disposed = false;
+  let tool = 'navigate', draft = null, before = null, last = null, disposed = false;
   let writable = false, queue = Promise.resolve(), revision = 0;
   const history = new History(), listeners = [];
   const canvasOffsets = new Map();
@@ -104,6 +105,7 @@ export default function RevealInk() {
       reveal = deck;
       const opts = reveal.getConfig().ink || {};
       if (opts.enabled === false) return;
+      tool = initialTool(opts.initialTool);
       config = {
         presentation: opts.presentation || `${location.origin}${location.pathname}`,
         pen: { width: 3.5, color: '#ffffff', thinning: 0.2, smoothing: 0.35, streamline: 0.15, pressure: true, ...opts.pen },
@@ -183,12 +185,23 @@ export default function RevealInk() {
       };
       on('slidechanged', changed);
       for (const name of ['ready', 'slidetransitionend', 'resize', 'overviewshown', 'overviewhidden', 'paused', 'resumed', 'scrollviewactivated', 'scrollviewdeactivated']) on(name, refresh);
+      // Reveal may recenter a slide after fonts/media load or a second layout
+      // pass without changing scale (and therefore without a resize event).
+      // Watch only slide ancestors, never the SVG styles that layout() writes.
+      const layoutObserver = new MutationObserver(records => {
+        const current = reveal.getCurrentSlide();
+        if (current && records.some(record => record.target.contains(current))) {
+          cancelAnimationFrame(settleFrame);
+          settleFrame = requestAnimationFrame(() => refreshWhenCentered());
+        }
+      });
+      layoutObserver.observe(reveal.getSlidesElement(), { subtree: true, attributes: true, attributeFilter: ['style'] });
       // Flush the current partial stroke before a tab is hidden or navigated away.
       const flush = () => input?.finish();
       window.addEventListener('pagehide', flush);
       const visibility = () => { if (document.hidden) flush(); };
       document.addEventListener('visibilitychange', visibility);
-      api.cleanup = () => { cancelAnimationFrame(settleFrame); window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', visibility); };
+      api.cleanup = () => { layoutObserver.disconnect(); cancelAnimationFrame(settleFrame); window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', visibility); };
       if (reveal.isReady()) refresh();
     },
     setTool, toggleCanvas, scrollCanvas: scrollTo,

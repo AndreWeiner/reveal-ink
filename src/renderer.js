@@ -50,9 +50,10 @@ export class Renderer {
     svg.style.width = `${fullWidth}px`; svg.style.height = `${fullHeight}px`;
     svg.style.left = `${-padX}px`; svg.style.top = `${-slide.offsetTop-padY}px`;
     svg.setAttribute('viewBox', `${-padX*MODEL_WIDTH/width} ${(-padY + scroll*height)*MODEL_WIDTH/width} ${fullWidth*MODEL_WIDTH/width} ${fullHeight*MODEL_WIDTH/width}`);
-    // Firefox resolves the SVG containing block differently on the dynamically
-    // rendered flashcard slide. Keep the established placement everywhere else.
-    if (/Firefox\//.test(navigator.userAgent) && slide.matches('[data-flashcards]')) {
+    // Firefox resolves an absolutely positioned SVG differently inside Reveal's
+    // centered slides, including ordinary slides and dynamic flashcards.
+    // Correct the rendered surface without changing stored annotation coordinates.
+    if (/Firefox\//.test(navigator.userAgent)) {
       const slideBounds = slide.getBoundingClientRect();
       const slideCenter = slideBounds.left + slideBounds.width/2;
       const viewportCenter = bounds.left + bounds.width/2;

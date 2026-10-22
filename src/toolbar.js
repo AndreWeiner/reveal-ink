@@ -6,7 +6,7 @@ export function createToolbar(root, actions, config) {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
     b.setAttribute('aria-label', label); b.addEventListener('click', action); parent.append(b); return b;
   }
-  for (const [tool, label] of [['navigate','Navigate'], ['pen','Pen'], ['highlighter','Highlight']]) {
+  for (const [tool, label] of [['navigate','Navigate'], ['pen','Pen'], ['highlighter','Highlight'], ['laser','Laser']]) {
     buttons[tool] = button(label, () => actions.tool(tool)); buttons[tool].dataset.tool = tool;
   }
   buttons.undo = button('Undo', actions.undo); buttons.redo = button('Redo', actions.redo);

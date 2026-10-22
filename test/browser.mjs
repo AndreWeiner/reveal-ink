@@ -114,6 +114,21 @@ try {
   assert.equal((await data()).slides['canvas:id:ink-equation'].length,1);
   await page.evaluate(()=>Reveal.getPlugin('ink').toggleCanvas());
   assert.equal((await data()).slides['id:ink-equation'].length,3);
+  const permanent = await data();
+  await page.evaluate(() => Reveal.getPlugin('ink').setTool('laser'));
+  await pen();
+  assert.deepEqual(await data(), permanent, 'Laser strokes never enter annotation export');
+  assert.equal(await page.$$eval('.reveal-ink-laser', nodes => nodes.length), 1);
+  await pen();
+  assert.equal(await page.$$eval('.reveal-ink-laser', nodes => nodes.length), 2);
+  await page.evaluate(() => Reveal.getPlugin('ink').setTool('pen'));
+  await page.evaluate(() => Reveal.getPlugin('ink').setTool('laser'));
+  assert.equal(await page.$$eval('.reveal-ink-laser', nodes => nodes.length), 2);
+  await page.waitForFunction(() => !document.querySelector('.reveal-ink-laser'));
+  assert.deepEqual(await data(), permanent);
+  await pen();
+  await page.evaluate(() => Reveal.getPlugin('ink').toggleCanvas());
+  assert.equal(await page.$('.reveal-ink-laser'), null);
   await page.screenshot({path:'/tmp/reveal-ink-demo.png'});
   await page.evaluate(()=>Reveal.getPlugin('ink').destroy());
   assert.equal(await page.$('.reveal-ink-toolbar'),null);assert.equal(await page.$('.reveal-ink-surface'),null);
@@ -121,6 +136,7 @@ try {
   const context = await browser.createBrowserContext();
   const scrollPage = await context.newPage();
   await scrollPage.goto(url); await scrollPage.waitForFunction(()=>window.Reveal?.isReady());
+  await scrollPage.click('[data-tool=pen]');
   await scrollPage.click('.reveal-ink-canvas-toggle');
   assert.ok(await scrollPage.$('.ink-extra-canvas'));
   await scrollPage.click('.reveal-ink-toolbar summary');
@@ -149,6 +165,7 @@ try {
   await scrollPage.evaluate(()=>Reveal.getPlugin('ink').undo());
   await scrollPage.evaluate(()=>Reveal.getPlugin('ink').flush());
   await scrollPage.reload();await scrollPage.waitForFunction(()=>window.Reveal?.isReady());
+  await scrollPage.click('[data-tool=pen]');
   await scrollPage.click('.reveal-ink-canvas-toggle');
   await scrollPage.evaluate(position=>Reveal.getPlugin('ink').scrollCanvas(position),scrollPosition);
   notes=await scrollPage.evaluate(()=>JSON.parse(Reveal.getPlugin('ink').exportJSON()));

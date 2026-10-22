@@ -81,10 +81,10 @@ export class Renderer {
     return node;
   }
   render(slide, strokes, aspect) {
-    const svg = this.surface(slide); svg.replaceChildren();
+    const svg = this.surface(slide); svg.querySelectorAll(':scope > path').forEach(node => node.remove());
     for (const stroke of strokes) {
       const path = this.path(stroke);
-      path.setAttribute('transform', `scale(1 ${stroke.aspect / aspect})`); svg.append(path);
+      path.setAttribute('transform', `scale(1 ${stroke.aspect / aspect})`); svg.insertBefore(path, svg.querySelector('.reveal-ink-laser'));
     }
   }
   preview(slide, stroke) {
@@ -92,5 +92,20 @@ export class Renderer {
     svg.querySelector('[data-preview]')?.remove();
     if (stroke) { const node = this.path(stroke, false); node.dataset.preview = ''; svg.append(node); }
   }
-  destroy() { for (const svg of this.surfaces.values()) svg.remove(); this.surfaces.clear(); }
+  laser(slide, stroke, hold, fade) {
+    const group = document.createElementNS(NS, 'g');
+    group.classList.add('reveal-ink-laser');
+    group.append(this.path(stroke)); this.surface(slide).append(group);
+    const animation = group.animate([{ opacity: 1 }, { opacity: 0 }],
+      { delay: hold, duration: fade, fill: 'forwards' });
+    animation.finished.then(() => group.remove()).catch(() => {});
+  }
+  clearLaser() {
+    for (const svg of this.surfaces.values()) {
+      for (const node of svg.querySelectorAll('.reveal-ink-laser')) {
+        node.getAnimations().forEach(animation => animation.cancel()); node.remove();
+      }
+    }
+  }
+  destroy() { this.clearLaser(); for (const svg of this.surfaces.values()) svg.remove(); this.surfaces.clear(); }
 }

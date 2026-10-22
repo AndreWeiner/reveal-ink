@@ -30,7 +30,7 @@ A small red dot marks the stylus position during contact and whenever the device
 6. After a lecture, choose **More → Export JSON** to download a backup. Export includes annotations from **all slides in the current presentation**, including slides that are not visible. It contains vector strokes, not slide text, images, or screenshots.
 7. To restore or transfer notes, open the matching presentation in the destination browser and choose **More → Import JSON…**. Select the backup and confirm replacement. This replaces all annotations in that presentation, not only the current slide. Matching slide IDs (or fallback indices) are needed to display the notes on the correct slides.
 
-Notes are local to each browser/device; export/import is how you transfer them. Changing the default pen color does not recolor saved notes. The startup tool defaults to Navigate. Set `ink.initialTool` to `pen`, `highlighter`, or `eraser` to override it for a deck. Tool and color selections reset on reload; annotations persist.
+Notes are local to each browser/device; export/import is how you transfer them. Changing the default pen color does not recolor saved notes. The startup tool defaults to Navigate. Set `ink.initialTool` to `pen`, `highlighter`, `laser`, or `eraser` to override it for a deck. Tool and color selections reset on reload; annotations persist.
 
 ### Color presets
 
@@ -46,7 +46,7 @@ Notes are local to each browser/device; export/import is how you transfer them. 
 
 These are built-in presets matching the lecture template; they do not require the host deck to define CSS variables.
 
-The toolbar automatically collapses when a pen, highlighter or eraser gesture starts and stays out of the way. Tap the small **⌃** button at the bottom to bring it back. **⌄** hides it manually.
+The toolbar automatically collapses when a pen, highlighter, laser or eraser gesture starts and stays out of the way. Tap the small **⌃** button at the bottom to bring it back. **⌄** hides it manually.
 
 ### Extra working space
 
@@ -109,7 +109,7 @@ ES module: `import RevealInk from './plugin/ink/v0.3.7/ink.mjs'`. The factory cr
 Use `const ink = Reveal.getPlugin('ink')` for:
 
 ```js
-ink.setTool('pen'); // navigate | pen | highlighter | eraser
+ink.setTool('pen'); // navigate | pen | highlighter | laser | eraser
 ink.undo(); ink.redo(); ink.clear();
 const json = ink.exportJSON();
 await ink.importJSON(json); // replaces all annotations, no API confirmation dialog
@@ -257,3 +257,9 @@ INK_TEST_BROWSER=firefox INK_FIREFOX_BIN=/usr/bin/firefox npm run test:alignment
 ```
 
 Set `INK_FIREFOX_BIN` to your Firefox executable path, or omit it when Puppeteer has a managed Firefox installation.
+
+### Temporary laser pen
+
+Select **Laser** to draw temporary marks with a stylus or mouse. Marks remain visible while drawing, stay for 800 ms after release, then fade over 500 ms. Several marks can fade independently. Laser marks never enter saved notes, JSON exports, or undo/redo history. Existing version 1 and 2 annotation files remain supported. Marks clear when changing slides or canvas, entering overview or pause, or hiding the tab.
+
+Configure `ink.laser` with `color`, `width`, `hold` and `fade` (timings in milliseconds). Laser color and width are independent of Pen and Highlight. `ink.initialTool: 'laser'` selects it on startup.

@@ -28,7 +28,7 @@ export default function RevealInk() {
     canvasOffsets.set(baseKey, Math.max(0, Math.min(90, position)));
     layout();
   }
-  const settings = () => config[tool === 'highlighter' ? 'highlighter' : 'pen'];
+  const settings = () => config[tool === 'laser' ? 'laser' : tool === 'highlighter' ? 'highlighter' : 'pen'];
   const size = () => reveal.getComputedSlideSize();
   const aspect = () => size().width / size().height;
   const strokes = () => data.slides[key] || [];
@@ -60,6 +60,11 @@ export default function RevealInk() {
   }
   function finish() {
     if (!before) return;
+    if (draft?.tool === 'laser') {
+      renderer.preview(slide, null);
+      renderer.laser(slide, draft, config.laser.hold, config.laser.fade);
+      before = null; draft = null; last = null; return;
+    }
     if (draft) data.slides[key] = [...before, draft];
     const previous = before; before = null; draft = null; last = null;
     commit(previous);
@@ -67,6 +72,7 @@ export default function RevealInk() {
   function refresh() {
     input?.finish();
     const nextSlide = reveal.getCurrentSlide();
+    if (slide !== nextSlide || blocked()) renderer.clearLaser();
     if (slide !== nextSlide) { if (slide) renderer.surface(slide).classList.remove('ink-extra-canvas'); canvas = false; }
     slide = nextSlide;
     if (!slide) return;
@@ -77,12 +83,13 @@ export default function RevealInk() {
   function toggleCanvas() {
     input?.finish();
     if (!slide) return;
+    renderer.clearLaser();
     canvas = !canvas;
     key = canvas ? `canvas:${baseKey}` : baseKey;
     layout(); paint(); update();
   }
   function setTool(value) {
-    if (!['pen', 'highlighter', 'eraser', 'navigate'].includes(value)) throw new Error('Unknown ink tool');
+    if (!['pen', 'highlighter', 'laser', 'eraser', 'navigate'].includes(value)) throw new Error('Unknown ink tool');
     input?.finish(); tool = value; if (slide) update();
   }
   function edit(kind) {
@@ -110,9 +117,14 @@ export default function RevealInk() {
         presentation: opts.presentation || `${location.origin}${location.pathname}`,
         pen: { width: 3.5, color: '#ffffff', thinning: 0.2, smoothing: 0.35, streamline: 0.15, pressure: true, ...opts.pen },
         highlighter: { width: 14, color: '#feffb3', thinning: 0, smoothing: 0.35, streamline: 0.15, pressure: false, ...opts.highlighter },
+        laser: { width: 5, color: '#ff3344', thinning: 0, smoothing: 0.35, streamline: 0.15, pressure: false, hold: 800, fade: 500, ...opts.laser },
         eraser: { radius: 12, ...opts.eraser },
         storage: { type: 'indexeddb', autosave: true, ...opts.storage }
       };
+      for (const name of ['hold', 'fade']) {
+        const value = config.laser[name];
+        config.laser[name] = Number.isFinite(value) ? Math.max(0, Math.min(60000, value)) : (name === 'hold' ? 800 : 500);
+      }
       root = reveal.getRevealElement(); renderer = new Renderer();
       data = emptyDocument(config.presentation);
       toolbar = createToolbar(root, {
@@ -197,7 +209,7 @@ export default function RevealInk() {
       });
       layoutObserver.observe(reveal.getSlidesElement(), { subtree: true, attributes: true, attributeFilter: ['style'] });
       // Flush the current partial stroke before a tab is hidden or navigated away.
-      const flush = () => input?.finish();
+      const flush = () => { input?.finish(); renderer.clearLaser(); };
       window.addEventListener('pagehide', flush);
       const visibility = () => { if (document.hidden) flush(); };
       document.addEventListener('visibilitychange', visibility);

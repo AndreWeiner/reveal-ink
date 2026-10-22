@@ -19,9 +19,9 @@ export function createToolbar(root, actions, config) {
   const palette = document.createElement('div'); palette.className = 'reveal-ink-palette';
   palette.setAttribute('role', 'group'); palette.setAttribute('aria-label', 'Preset colors');
   const swatches = [];
-  function selectColor(value) {
+  function selectColor(value, active = true) {
     color.value = value;
-    for (const swatch of swatches) swatch.setAttribute('aria-pressed', String(swatch.dataset.color === value.toLowerCase()));
+    for (const swatch of swatches) swatch.setAttribute('aria-pressed', String(active && swatch.dataset.color === value.toLowerCase()));
   }
   for (const [name, value] of [['White', '#ffffff'], ['Black', '#000000'],
     ['C0', '#8dd3c7'], ['C1', '#feffb3'], ['C2', '#bfbbd9'], ['C3', '#fa8174'], ['C4', '#81b1d2']]) {
@@ -111,7 +111,7 @@ export function createToolbar(root, actions, config) {
       syncVisibility();
       for (const [name, b] of Object.entries(buttons)) if (b.dataset.tool) b.setAttribute('aria-pressed', String(name === tool));
       buttons.undo.disabled = !history.undo.length; buttons.redo.disabled = !history.redo.length;
-      selectColor(settings.color); width.value = settings.width;
+      selectColor(settings.color, tool !== 'eraser'); width.value = settings.width;
       for (const name of Object.keys(filters)) filters[name].value = settings[name];
     },
     status(text, error = false) {

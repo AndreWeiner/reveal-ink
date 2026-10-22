@@ -76,15 +76,15 @@ npm run build
 node scripts/copy-release.mjs /path/to/lecture-repository
 ```
 
-This creates `plugin/ink/v0.3.7/` with the JavaScript, CSS, version, checksums and licenses. Keep these files together when distributing the lecture. It does not rewrite your lecture HTML.
+This creates `plugin/ink/v0.3.8/` with the JavaScript, CSS, version, checksums and licenses. Keep these files together when distributing the lecture. It does not rewrite your lecture HTML.
 
 Add the stylesheet in the HTML `<head>`. Load `ink.js` **after Reveal.js itself**, then append `RevealInk` to your existing `plugins` array and add the `ink` settings to your existing `Reveal.initialize` call. Keep any existing plugins such as math, markdown or notes; do not initialize Reveal a second time.
 
 For example, assuming the deck already loads Reveal.js:
 
 ```html
-<link rel="stylesheet" href="plugin/ink/v0.3.7/ink.css">
-<script src="plugin/ink/v0.3.7/ink.js"></script>
+<link rel="stylesheet" href="plugin/ink/v0.3.8/ink.css">
+<script src="plugin/ink/v0.3.8/ink.js"></script>
 <script>
 Reveal.initialize({
   plugins: [RevealInk],
@@ -104,7 +104,7 @@ Reveal.initialize({
 </script>
 ```
 
-ES module: `import RevealInk from './plugin/ink/v0.3.7/ink.mjs'`. The factory creates an isolated plugin instance for each Reveal deck. Standard global registration uses `plugins: [RevealInk]`.
+ES module: `import RevealInk from './plugin/ink/v0.3.8/ink.mjs'`. The factory creates an isolated plugin instance for each Reveal deck. Standard global registration uses `plugins: [RevealInk]`.
 
 Use `const ink = Reveal.getPlugin('ink')` for:
 
@@ -208,7 +208,7 @@ npm run test:alignment
 node scripts/copy-release.mjs /path/to/lecture-repository
 ```
 
-The copy command creates `plugin/ink/v0.3.7/` in the destination, including JS, CSS, licenses, version and SHA-256 checksums. It refuses to replace an existing release with different contents. Update each lecture's script and stylesheet paths to the paths it prints. Include `RevealInk` in the plugin list. Commit the versioned assets with the lecture changes.
+The copy command creates `plugin/ink/v0.3.8/` in the destination, including JS, CSS, licenses, version and SHA-256 checksums. It refuses to replace an existing release with different contents. Update each lecture's script and stylesheet paths to the paths it prints. Include `RevealInk` in the plugin list. Commit the versioned assets with the lecture changes.
 
 For a later release, update the package version and lockfile, run the checks, commit and tag the source, then copy that new version to each lecture that should receive it. Old lecture releases stay unchanged until explicitly upgraded. The first local source tag is `v0.1.0`.
 

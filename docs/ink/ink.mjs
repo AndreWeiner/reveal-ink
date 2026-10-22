@@ -4,6 +4,7 @@ function e(e) {
 		"navigate",
 		"pen",
 		"highlighter",
+		"laser",
 		"eraser"
 	].includes(e) ? e : "navigate";
 }
@@ -290,10 +291,10 @@ var Z = class {
 	}
 	render(e, t, n) {
 		let r = this.surface(e);
-		r.replaceChildren();
+		r.querySelectorAll(":scope > path").forEach((e) => e.remove());
 		for (let e of t) {
 			let t = this.path(e);
-			t.setAttribute("transform", `scale(1 ${e.aspect / n})`), r.append(t);
+			t.setAttribute("transform", `scale(1 ${e.aspect / n})`), r.insertBefore(t, r.querySelector(".reveal-ink-laser"));
 		}
 	}
 	preview(e, t) {
@@ -303,7 +304,19 @@ var Z = class {
 			e.dataset.preview = "", n.append(e);
 		}
 	}
+	laser(e, t, n, r) {
+		let i = document.createElementNS(q, "g");
+		i.classList.add("reveal-ink-laser"), i.append(this.path(t)), this.surface(e).append(i), i.animate([{ opacity: 1 }, { opacity: 0 }], {
+			delay: n,
+			duration: r,
+			fill: "forwards"
+		}).finished.then(() => i.remove()).catch(() => {});
+	}
+	clearLaser() {
+		for (let e of this.surfaces.values()) for (let t of e.querySelectorAll(".reveal-ink-laser")) t.getAnimations().forEach((e) => e.cancel()), t.remove();
+	}
 	destroy() {
+		this.clearLaser();
 		for (let e of this.surfaces.values()) e.remove();
 		this.surfaces.clear();
 	}
@@ -549,7 +562,8 @@ function ce(e, t, n) {
 	for (let [e, n] of [
 		["navigate", "Navigate"],
 		["pen", "Pen"],
-		["highlighter", "Highlight"]
+		["highlighter", "Highlight"],
+		["laser", "Laser"]
 	]) i[e] = a(n, () => t.tool(e)), i[e].dataset.tool = e;
 	i.undo = a("Undo", t.undo), i.redo = a("Redo", t.redo);
 	let o = document.createElement("details"), s = document.createElement("summary");
@@ -563,9 +577,9 @@ function ce(e, t, n) {
 	let d = document.createElement("div");
 	d.className = "reveal-ink-palette", d.setAttribute("role", "group"), d.setAttribute("aria-label", "Preset colors");
 	let f = [];
-	function p(e) {
+	function p(e, t = !0) {
 		u.value = e;
-		for (let t of f) t.setAttribute("aria-pressed", String(t.dataset.color === e.toLowerCase()));
+		for (let n of f) n.setAttribute("aria-pressed", String(t && n.dataset.color === e.toLowerCase()));
 	}
 	for (let [e, n] of [
 		["White", "#ffffff"],
@@ -629,7 +643,7 @@ function ce(e, t, n) {
 		update(e, t, n) {
 			w = e === "navigate", _.setAttribute("aria-pressed", String(e === "eraser")), A();
 			for (let [t, n] of Object.entries(i)) n.dataset.tool && n.setAttribute("aria-pressed", String(t === e));
-			i.undo.disabled = !t.undo.length, i.redo.disabled = !t.redo.length, p(n.color), h.value = n.width;
+			i.undo.disabled = !t.undo.length, i.redo.disabled = !t.redo.length, p(n.color, e !== "eraser"), h.value = n.width;
 			for (let e of Object.keys(y)) y[e].value = n[e];
 		},
 		status(e, t = !1) {
@@ -664,7 +678,7 @@ function le() {
 	function D(e) {
 		d && !N() && (c?.finish(), C.set(f, Math.max(0, Math.min(90, e))), E());
 	}
-	let O = () => r[p === "highlighter" ? "highlighter" : "pen"], k = () => t.getComputedSlideSize(), A = () => k().width / k().height, j = () => i.slides[u] || [], M = (e, n) => {
+	let O = () => r[p === "laser" ? "laser" : p === "highlighter" ? "highlighter" : "pen"], k = () => t.getComputedSlideSize(), A = () => k().width / k().height, j = () => i.slides[u] || [], M = (e, n) => {
 		t.on(e, n), S.push([e, n]);
 	}, N = () => t.isOverview() || t.isPaused() || t.isScrollView?.();
 	function P() {
@@ -687,6 +701,10 @@ function le() {
 	}
 	function te() {
 		if (!h) return;
+		if (m?.tool === "laser") {
+			s.preview(l, null), s.laser(l, m, r.laser.hold, r.laser.fade), h = null, m = null, g = null;
+			return;
+		}
 		m && (i.slides[u] = [...h, m]);
 		let e = h;
 		h = null, m = null, g = null, I(e);
@@ -694,15 +712,16 @@ function le() {
 	function L() {
 		c?.finish();
 		let e = t.getCurrentSlide();
-		l !== e && (l && s.surface(l).classList.remove("ink-extra-canvas"), d = !1), l = e, l && (f = G(l, t.getIndices(l)), u = d ? `canvas:${f}` : f, E(), F(), P());
+		(l !== e || N()) && s.clearLaser(), l !== e && (l && s.surface(l).classList.remove("ink-extra-canvas"), d = !1), l = e, l && (f = G(l, t.getIndices(l)), u = d ? `canvas:${f}` : f, E(), F(), P());
 	}
 	function R() {
-		c?.finish(), l && (d = !d, u = d ? `canvas:${f}` : f, E(), F(), P());
+		c?.finish(), l && (s.clearLaser(), d = !d, u = d ? `canvas:${f}` : f, E(), F(), P());
 	}
 	function z(e) {
 		if (![
 			"pen",
 			"highlighter",
+			"laser",
 			"eraser",
 			"navigate"
 		].includes(e)) throw Error("Unknown ink tool");
@@ -747,6 +766,17 @@ function le() {
 					pressure: !1,
 					...y.highlighter
 				},
+				laser: {
+					width: 5,
+					color: "#ff3344",
+					thinning: 0,
+					smoothing: .35,
+					streamline: .15,
+					pressure: !1,
+					hold: 800,
+					fade: 500,
+					...y.laser
+				},
 				eraser: {
 					radius: 12,
 					...y.eraser
@@ -756,7 +786,12 @@ function le() {
 					autosave: !0,
 					...y.storage
 				}
-			}, n = t.getRevealElement(), s = new Z(), i = $(r.presentation), o = ce(n, {
+			};
+			for (let e of ["hold", "fade"]) {
+				let t = r.laser[e];
+				r.laser[e] = Number.isFinite(t) ? Math.max(0, Math.min(6e4, t)) : e === "hold" ? 800 : 500;
+			}
+			n = t.getRevealElement(), s = new Z(), i = $(r.presentation), o = ce(n, {
 				tool: z,
 				canvas: R,
 				scrollTo: D,
@@ -869,7 +904,9 @@ function le() {
 				attributes: !0,
 				attributeFilter: ["style"]
 			});
-			let C = () => c?.finish();
+			let C = () => {
+				c?.finish(), s.clearLaser();
+			};
 			window.addEventListener("pagehide", C);
 			let T = () => {
 				document.hidden && C();

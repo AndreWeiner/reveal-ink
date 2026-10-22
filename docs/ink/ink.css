@@ -119,3 +119,5 @@
 }
 .reveal .reveal-ink-pen-cursor[hidden] { display: none; }
 @media print { .reveal .reveal-ink-pen-cursor { display: none !important; } }
+
+.reveal-ink-laser { pointer-events: none; filter: drop-shadow(0 0 2px #ff3344); }

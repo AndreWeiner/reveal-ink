@@ -16,8 +16,34 @@ export function pathData(points) {
   return `M ${start.join(' ')} ` + points.map((p, i) =>
     `Q ${p.join(' ')} ${midpoint(p, points[(i+1)%points.length]).join(' ')}`).join(' ') + ' Z';
 }
+// Completed strokes are immutable. Weak keys let deleted strokes and their caches
+// be collected after they also leave undo/redo history.
+const geometries = new WeakMap();
+function geometry(stroke) {
+  let cached = geometries.get(stroke);
+  if (!cached) {
+    const points = outline(stroke);
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const [x, y] of points) {
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+    }
+    cached = { points, minX, minY, maxX, maxY };
+    geometries.set(stroke, cached);
+  }
+  return cached;
+}
 export function hitStroke(stroke, from, to, aspect, radius) {
-  const points = outline(stroke).map(([x, y]) => [x, y * stroke.aspect / aspect]);
+  const shape = geometry(stroke), scaleY = stroke.aspect / aspect;
+  const ax = from[0]*MODEL_WIDTH, ay = from[1]*MODEL_WIDTH/aspect;
+  const bx = to[0]*MODEL_WIDTH, by = to[1]*MODEL_WIDTH/aspect;
+  if (Math.max(ax, bx)+radius < shape.minX || Math.min(ax, bx)-radius > shape.maxX ||
+      Math.max(ay, by)+radius < shape.minY*scaleY || Math.min(ay, by)-radius > shape.maxY*scaleY) return false;
+  if (shape.aspect !== aspect) {
+    shape.transformed = shape.points.map(([x, y]) => [x, y*scaleY]);
+    shape.aspect = aspect;
+  }
+  const points = shape.transformed;
   const a = denormalizePoint(from, MODEL_WIDTH, MODEL_WIDTH / aspect);
   const b = denormalizePoint(to, MODEL_WIDTH, MODEL_WIDTH / aspect);
   // Test the outline against the whole eraser sweep, including crossings between samples.
@@ -32,7 +58,7 @@ export function hitStroke(stroke, from, to, aspect, radius) {
   return inside;
 }
 export class Renderer {
-  constructor() { this.surfaces = new Map(); }
+  constructor() { this.surfaces = new Map(); this.paths = new WeakMap(); }
   surface(slide) {
     if (!this.surfaces.has(slide)) {
       const svg = document.createElementNS(NS, 'svg');
@@ -75,18 +101,38 @@ export class Renderer {
   path(stroke, complete = true) {
     const node = document.createElementNS(NS, 'path');
     node.dataset.stroke = stroke.id;
-    node.setAttribute('d', pathData(outline(stroke, complete)));
+    const shape = complete ? geometry(stroke) : null;
+    node.setAttribute('d', shape ? (shape.path ??= pathData(shape.points)) : pathData(outline(stroke, false)));
     node.setAttribute('fill', stroke.color);
     node.setAttribute('opacity', stroke.tool === 'highlighter' ? '0.3' : '1');
     return node;
   }
   render(slide, strokes, aspect) {
-    const svg = this.surface(slide); svg.querySelectorAll(':scope > path').forEach(node => node.remove());
-    for (const stroke of strokes) {
-      const path = this.path(stroke);
-      path.setAttribute('transform', `scale(1 ${stroke.aspect / aspect})`); svg.insertBefore(path, svg.querySelector('.reveal-ink-laser'));
+    const svg = this.surface(slide);
+    svg.querySelector('[data-preview]')?.remove();
+    let paths = this.paths.get(svg);
+    if (!paths) { paths = new Map(); this.paths.set(svg, paths); }
+    const retained = new Set(strokes);
+    for (const [stroke, entry] of paths) {
+      if (!retained.has(stroke)) { entry.node.remove(); paths.delete(stroke); }
+    }
+    let next = svg.querySelector('.reveal-ink-laser');
+    for (let i = strokes.length - 1; i >= 0; i--) {
+      const stroke = strokes[i];
+      let entry = paths.get(stroke);
+      if (!entry) {
+        entry = { node: this.path(stroke) };
+        paths.set(stroke, entry);
+      }
+      if (entry.node.parentNode !== svg || entry.node.nextSibling !== next) svg.insertBefore(entry.node, next);
+      next = entry.node;
+      if (entry.aspect !== aspect) {
+        entry.node.setAttribute('transform', `scale(1 ${stroke.aspect / aspect})`);
+        entry.aspect = aspect;
+      }
     }
   }
+
   preview(slide, stroke) {
     const svg = this.surface(slide);
     svg.querySelector('[data-preview]')?.remove();

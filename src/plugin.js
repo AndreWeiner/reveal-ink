@@ -1,3 +1,4 @@
+import { SaveQueue } from './save-queue.js';
 import { initialTool } from './tools.js';
 import { Renderer, MODEL_WIDTH, hitStroke } from './renderer.js';
 import { slideKey } from './coordinates.js';
@@ -11,7 +12,8 @@ export default function RevealInk() {
   let reveal, root, config, data, storage, toolbar, renderer, input, slide, key;
   let canvas = false, baseKey;
   let tool = 'navigate', draft = null, before = null, last = null, disposed = false;
-  let writable = false, queue = Promise.resolve(), revision = 0;
+  let writable = false, saves;
+  let erasePoints = [], eraseDirty = false;
   const history = new History(), listeners = [];
   const canvasOffsets = new Map();
   const offset = () => canvas ? canvasOffsets.get(baseKey) || 0 : 0;
@@ -43,22 +45,18 @@ export default function RevealInk() {
   }
   function paint() { if (slide) { renderer.surface(slide).classList.toggle('ink-extra-canvas', canvas); renderer.render(slide, strokes(), aspect()); } }
   function save() {
-    if (!writable || !config.storage.autosave) return queue;
-    const snapshot = structuredClone(data), current = ++revision;
-    toolbar.status('Saving…');
-    queue = queue.then(() => storage.save(config.presentation, snapshot)).then(() => {
-      if (!disposed && current === revision) toolbar.status('Saved on this device');
-    }).catch(error => {
-      if (!disposed) toolbar.status('Save failed — export a backup', true);
-      console.error('Reveal Ink:', error);
-    });
-    return queue;
+    if (!writable || !config.storage.autosave) return Promise.resolve();
+    // Committed strokes and their arrays are immutable; only copy the slide map.
+    // IndexedDB performs its own serialization when the latest snapshot is saved.
+    return saves.enqueue({ ...data, slides: { ...data.slides } });
   }
+
   function commit(previous) {
     if (previous !== strokes()) { history.record(key, previous, strokes()); save(); }
     paint(); update();
   }
   function finish() {
+    flushErase();
     if (!before) return;
     if (draft?.tool === 'laser') {
       renderer.preview(slide, null);
@@ -98,13 +96,19 @@ export default function RevealInk() {
     if (value) { data.slides[key] = value; paint(); update(); save(); }
   }
   function erase(point) {
-    const remaining = strokes().filter(s => !hitStroke(s, last || point, point, aspect(), config.eraser.radius));
-    if (remaining.length !== strokes().length) data.slides[key] = remaining;
+    const currentAspect = aspect();
+    const remaining = strokes().filter(s => !hitStroke(s, last || point, point, currentAspect, config.eraser.radius));
+    if (remaining.length !== strokes().length) { data.slides[key] = remaining; eraseDirty = true; }
     last = point;
+  }
+  function flushErase() {
+    if (!erasePoints.length) return;
+    const points = erasePoints; erasePoints = [];
+    for (const point of points) erase(point);
   }
   async function importJSON(value) {
     const next = parseDocument(value, config.presentation);
-    input?.finish(); data = next; history.clear(); paint(); update(); await save();
+    input?.finish(); data = next; history.clear(); paint(); update(); save(); await saves?.flush();
   }
   const api = {
     id: 'ink',
@@ -144,6 +148,10 @@ export default function RevealInk() {
       toolbar.hide(true);
       try {
         storage = createStorage(config.storage); await storage.open();
+        saves = new SaveQueue(snapshot => storage.save(config.presentation, snapshot), error => {
+          if (!disposed) toolbar.status('Save failed — export a backup', true);
+          console.error('Reveal Ink:', error);
+        });
         const stored = await storage.load(config.presentation);
         if (stored) data = parseDocument(stored, config.presentation);
         writable = true;
@@ -161,7 +169,7 @@ export default function RevealInk() {
         start(point, pointerType) {
           toolbar.collapse();
           before = strokes(); last = point;
-          if (tool === 'eraser') { erase(point); paint(); return; }
+          if (tool === 'eraser') { eraseDirty = false; erase(point); if (eraseDirty) paint(); eraseDirty = false; return; }
           const p = settings();
           draft = { id: globalThis.crypto?.randomUUID?.() || `stroke-${Date.now()}-${Math.random().toString(36).slice(2)}`,
             tool, width: p.width, color: p.color, aspect: aspect(),
@@ -174,10 +182,13 @@ export default function RevealInk() {
             if (draft) {
               const prev = draft.points.at(-1);
               if (Math.hypot((p[0]-prev[0])*MODEL_WIDTH, (p[1]-prev[1])*MODEL_WIDTH/aspect()) > 0.1 || p[2] !== prev[2]) draft.points.push(p);
-            } else erase(p);
+            } else erasePoints.push(p);
           }
         },
-        preview() { if (draft) renderer.preview(slide, draft); else paint(); },
+        preview() {
+          if (draft) renderer.preview(slide, draft);
+          else { flushErase(); if (eraseDirty) paint(); eraseDirty = false; }
+        },
         pressure: () => draft?.points.at(-1)?.[2] || 0.5,
         finish
       });
@@ -209,7 +220,7 @@ export default function RevealInk() {
       });
       layoutObserver.observe(reveal.getSlidesElement(), { subtree: true, attributes: true, attributeFilter: ['style'] });
       // Flush the current partial stroke before a tab is hidden or navigated away.
-      const flush = () => { input?.finish(); renderer.clearLaser(); };
+      const flush = () => { input?.finish(); renderer.clearLaser(); saves?.flush(); };
       window.addEventListener('pagehide', flush);
       const visibility = () => { if (document.hidden) flush(); };
       document.addEventListener('visibilitychange', visibility);
@@ -221,12 +232,12 @@ export default function RevealInk() {
     clear() { input?.finish(); if (slide && strokes().length) { const old = strokes(); data.slides[key] = []; commit(old); } },
     exportJSON() { input?.finish(); return serialize(data); },
     importJSON,
-    flush() { input?.finish(); return queue; },
+    flush() { input?.finish(); return saves?.flush() || Promise.resolve(); },
     async destroy() {
       input?.destroy(); disposed = true;
       for (const [name, fn] of listeners) reveal.off(name, fn);
       api.cleanup?.(); toolbar?.destroy(); renderer?.destroy(); root?.classList.remove('ink-active');
-      await queue; storage?.close();
+      await saves?.flush(); storage?.close();
     }
   };
   return api;

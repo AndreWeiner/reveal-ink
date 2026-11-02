@@ -76,15 +76,15 @@ npm run build
 node scripts/copy-release.mjs /path/to/lecture-repository
 ```
 
-This creates `plugin/ink/v0.3.8/` with the JavaScript, CSS, version, checksums and licenses. Keep these files together when distributing the lecture. It does not rewrite your lecture HTML.
+This creates `plugin/ink/v0.3.9/` with the JavaScript, CSS, version, checksums and licenses. Keep these files together when distributing the lecture. It does not rewrite your lecture HTML.
 
 Add the stylesheet in the HTML `<head>`. Load `ink.js` **after Reveal.js itself**, then append `RevealInk` to your existing `plugins` array and add the `ink` settings to your existing `Reveal.initialize` call. Keep any existing plugins such as math, markdown or notes; do not initialize Reveal a second time.
 
 For example, assuming the deck already loads Reveal.js:
 
 ```html
-<link rel="stylesheet" href="plugin/ink/v0.3.8/ink.css">
-<script src="plugin/ink/v0.3.8/ink.js"></script>
+<link rel="stylesheet" href="plugin/ink/v0.3.9/ink.css">
+<script src="plugin/ink/v0.3.9/ink.js"></script>
 <script>
 Reveal.initialize({
   plugins: [RevealInk],
@@ -104,7 +104,7 @@ Reveal.initialize({
 </script>
 ```
 
-ES module: `import RevealInk from './plugin/ink/v0.3.8/ink.mjs'`. The factory creates an isolated plugin instance for each Reveal deck. Standard global registration uses `plugins: [RevealInk]`.
+ES module: `import RevealInk from './plugin/ink/v0.3.9/ink.mjs'`. The factory creates an isolated plugin instance for each Reveal deck. Standard global registration uses `plugins: [RevealInk]`.
 
 Use `const ink = Reveal.getPlugin('ink')` for:
 
@@ -208,7 +208,7 @@ npm run test:alignment
 node scripts/copy-release.mjs /path/to/lecture-repository
 ```
 
-The copy command creates `plugin/ink/v0.3.8/` in the destination, including JS, CSS, licenses, version and SHA-256 checksums. It refuses to replace an existing release with different contents. Update each lecture's script and stylesheet paths to the paths it prints. Include `RevealInk` in the plugin list. Commit the versioned assets with the lecture changes.
+The copy command creates `plugin/ink/v0.3.9/` in the destination, including JS, CSS, licenses, version and SHA-256 checksums. It refuses to replace an existing release with different contents. Update each lecture's script and stylesheet paths to the paths it prints. Include `RevealInk` in the plugin list. Commit the versioned assets with the lecture changes.
 
 For a later release, update the package version and lockfile, run the checks, commit and tag the source, then copy that new version to each lecture that should receive it. Old lecture releases stay unchanged until explicitly upgraded. The first local source tag is `v0.1.0`.
 
@@ -263,3 +263,29 @@ Set `INK_FIREFOX_BIN` to your Firefox executable path, or omit it when Puppeteer
 Select **Laser** to draw temporary marks with a stylus or mouse. Marks remain visible while drawing, stay for 800 ms after release, then fade over 500 ms. Several marks can fade independently. Laser marks never enter saved notes, JSON exports, or undo/redo history. Existing version 1 and 2 annotation files remain supported. Marks clear when changing slides or canvas, entering overview or pause, or hiding the tab.
 
 Configure `ink.laser` with `color`, `width`, `hold` and `fade` (timings in milliseconds). Laser color and width are independent of Pen and Highlight. `ink.initialTool: 'laser'` selects it on startup.
+
+## Performance and annotation compatibility (0.3.9)
+
+Completed stroke outlines, bounds and SVG path strings are cached in memory. The
+eraser rejects distant strokes before precise sweep testing and batches pointer
+samples at animation frames; finishing or cancelling a gesture processes all
+remaining samples. Rendering retains untouched SVG nodes and preserves painter
+order through undo/redo. Cache keys are weak references to completed strokes.
+
+Autosave batches changes for 100 ms, with at most one write in progress and one
+latest pending snapshot. Snapshot capture copies only the slide map; committed
+strokes are immutable. IndexedDB still serializes the complete document when a
+write starts, so very large decks can still incur storage overhead. `flush()`
+starts pending saves immediately and waits for them; hiding/leaving the page
+also starts a flush (browser termination cannot guarantee async completion).
+Storage failures remain visible in the toolbar.
+
+The IndexedDB schema, presentation keys, extra-canvas keys, version 1 reader,
+version 2 reader/writer, whole-stroke erasing and annotation coordinates are
+unchanged. Existing JSON files require no conversion, and version 2 exports
+remain readable by earlier version 2 readers.
+
+Run `npm test`, `npm run test:browser`, and `npm run test:alignment` for
+regressions. Run `node scripts/benchmark-performance.mjs` for bounded synthetic
+CPU timings with raw samples; these exclude browser paint and IndexedDB writes
+and do not predict stylus latency on a particular device.

@@ -24,6 +24,54 @@ async function pen(type='pen', cancel=false) {
 }
 try {
   await page.goto(url);await ready();
+  // Incremental renderer keeps untouched nodes and painter order through erase/undo.
+  await page.evaluate(async () => {
+    const { Renderer, hitStroke } = await import('/src/renderer.js');
+    const renderer = new Renderer(), slide = document.createElement('section');
+    const make = (id, x) => ({id,tool:'pen',width:4,color:'#000000',aspect:1.5,
+      options:{thinning:.2,smoothing:.7,streamline:.65,simulatePressure:false},points:[[x,.3,.5],[x,.5,.5]]});
+    const a = make('a', .2), b = make('b', .5), c = make('c', .8);
+    const assert = (ok, message) => { if (!ok) throw Error(message); };
+    renderer.render(slide, [a,b,c], 1.5);
+    const nodes = [...renderer.surface(slide).children];
+    renderer.render(slide, [a,c], 1.5);
+    assert(renderer.surface(slide).children[1] === nodes[2], 'Erasing rebuilt untouched paths');
+    renderer.render(slide, [a,b,c], 1.5);
+    assert([...renderer.surface(slide).children].map(n=>n.dataset.stroke).join() === 'a,b,c', 'Undo changed painter order');
+    assert(renderer.surface(slide).children[0] === nodes[0], 'Undo rebuilt retained path');
+    renderer.render(slide, [a,b,c], 2);
+    assert(renderer.surface(slide).children[0].getAttribute('transform') === 'scale(1 0.75)', 'Aspect not updated');
+    assert(hitStroke(a,[.2,.1],[.2,.5],2,12), 'Cached hit test lost aspect scaling');
+    assert(!hitStroke(a,[.8,.1],[.8,.5],2,12), 'Distant stroke not rejected');
+    renderer.destroy();
+  });
+  // Preserve every coalesced sweep segment and flush it even without a paint frame.
+  await page.evaluate(async () => {
+    const ink = Reveal.getPlugin('ink');
+    const make = (id, x, y) => ({id,tool:'pen',width:4,color:'#000000',aspect:960/700,
+      options:{thinning:.2,smoothing:.7,streamline:.65,simulatePressure:false},points:[[x,y,.5]]});
+    const legacy = {version:1,presentation:'legacy',slides:{'id:ink-text':[
+      make('a',.2,.3), make('b',.5,.6), make('c',.8,.3), make('retained',.5,.9)]}};
+    await ink.importJSON(JSON.stringify(legacy));
+    ink.setTool('eraser');
+    const target = Reveal.getCurrentSlide(), rect = target.querySelector('svg').inkRect;
+    const event = (type,x,y) => new PointerEvent(type,{bubbles:true,cancelable:true,
+      pointerType:'pen',pointerId:91,button:0,buttons:1,pressure:.5,
+      clientX:rect.left+x*rect.width,clientY:rect.top+y*rect.height});
+    target.dispatchEvent(event('pointerdown',.1,.3));
+    const move = event('pointermove',.8,.3);
+    Object.defineProperty(move,'getCoalescedEvents',{value:()=>[event('pointermove',.2,.3),event('pointermove',.5,.6),move]});
+    target.dispatchEvent(move);
+    target.dispatchEvent(event('pointercancel',.8,.3));
+    const notes = JSON.parse(ink.exportJSON());
+    if (notes.slides['id:ink-text'].map(s=>s.id).join() !== 'retained') throw Error('Lost coalesced eraser trajectory');
+    ink.undo();
+    if (JSON.parse(ink.exportJSON()).slides['id:ink-text'].length !== 4) throw Error('Eraser undo lost legacy data');
+    await ink.importJSON(JSON.stringify({version:2,presentation:'demo',slides:{}}));
+    ink.setTool('pen');
+  });
+  console.log('PASS: retained SVG nodes, painter order, aspect-aware cached hits, legacy import and coalesced eraser cancellation');
+
   await pen();
   assert.ok(await page.$eval('.reveal-ink-toolbar', e => e.hidden));
   assert.ok(await page.$eval('.reveal-ink-toggle', e => !e.hidden));
